@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  roomMemberships RoomMember[]
+  sentMessages    Message[]
+  notifications   Notification[]
+  friendsSent     Friendship[] @relation("requester")
+  friendsReceived Friendship[] @relation("addressee")
+  bansGiven       UserBan[]    @relation("banner")
+  bansReceived    UserBan[]    @relation("banned")
+  roomBansGiven   RoomBan[]    @relation("roomBanner")
+  ownedRooms      Room[]
+}
+
+// Managed by connect-pg-simple — do NOT rename columns
+model user_sessions {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], name: "IDX_session_expire")
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isPublic    Boolean  @default(true)
+  ownerId     String
+  createdAt   DateTime @default(now())
+
+  owner    User         @relation(fields: [ownerId], references: [id])
+  members  RoomMember[]
+  messages Message[]
+  bans     RoomBan[]
+}
+
+model RoomMember {
+  userId            String
+  roomId            String
+  isAdmin           Boolean  @default(false)
+  joinedAt          DateTime @default(now())
+  lastReadMessageId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roomId])
+}
+
+model RoomBan {
+  userId     String
+  roomId     String
+  bannedById String
+  bannedAt   DateTime @default(now())
+
+  room      Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bannedBy  User @relation("roomBanner", fields: [bannedById], references: [id])
+
+  @@id([userId, roomId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  roomId    String
+  authorId  String
+  content   String?
+  deleted   Boolean  @default(false)
+  edited    Boolean  @default(false)
+  replyToId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id])
+  replyTo     Message?     @relation("replies", fields: [replyToId], references: [id])
+  replies     Message[]    @relation("replies")
+  attachments Attachment[]
+
+  @@index([roomId, createdAt(sort: Desc)])
+}
+
+model Attachment {
+  id           String  @id @default(uuid())
+  messageId    String
+  originalName String
+  storedName   String
+  mimeType     String
+  sizeBytes    Int
+  hasThumb     Boolean @default(false)
+  comment      String?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id          String         @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendStatus   @default(PENDING)
+  message     String?
+  createdAt   DateTime       @default(now())
+
+  requester User @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+
+model UserBan {
+  bannerId  String
+  bannedId  String
+  createdAt DateTime @default(now())
+
+  banner User @relation("banner", fields: [bannerId], references: [id], onDelete: Cascade)
+  banned User @relation("banned", fields: [bannedId], references: [id], onDelete: Cascade)
+
+  @@id([bannerId, bannedId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, expiresAt])
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  ROOM_INVITE
+  MENTION
+}

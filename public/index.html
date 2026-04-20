@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webchat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== AUTH SCREENS ===== -->
+    <div v-if="!currentUser" class="auth-wrapper">
+      <header class="auth-header">
+        <span class="logo">💬 Webchat</span>
+        <div>
+          <button @click="screen='login'" :class="{ active: screen==='login' }">Sign in</button>
+          <button @click="screen='register'" :class="{ active: screen==='register' }">Register</button>
+        </div>
+      </header>
+
+      <!-- Login -->
+      <div v-if="screen==='login'" class="auth-card">
+        <h2>Sign In</h2>
+        <input v-model="form.email" type="email" placeholder="Email" />
+        <input v-model="form.password" type="password" placeholder="Password" />
+        <label><input v-model="form.persistent" type="checkbox" /> Keep me signed in</label>
+        <button @click="login" class="btn-primary">Sign in</button>
+        <a href="#" @click.prevent="screen='reset'">Forgot password?</a>
+        <p v-if="authError" class="error">{{ authError }}</p>
+      </div>
+
+      <!-- Register -->
+      <div v-if="screen==='register'" class="auth-card">
+        <h2>Create Account</h2>
+        <input v-model="form.email" type="email" placeholder="Email" />
+        <input v-model="form.username" type="text" placeholder="Username" />
+        <input v-model="form.password" type="password" placeholder="Password" />
+        <input v-model="form.confirmPassword" type="password" placeholder="Confirm password" />
+        <button @click="register" class="btn-primary">Create account</button>
+        <p v-if="authError" class="error">{{ authError }}</p>
+      </div>
+
+      <!-- Reset password -->
+      <div v-if="screen==='reset'" class="auth-card">
+        <h2>Reset Password</h2>
+        <p class="hint">Enter your email and current password to set a new one.</p>
+        <input v-model="form.email" type="email" placeholder="Email" />
+        <input v-model="form.currentPassword" type="password" placeholder="Current password" />
+        <input v-model="form.newPassword" type="password" placeholder="New password" />
+        <button @click="resetPassword" class="btn-primary">Update password</button>
+        <a href="#" @click.prevent="screen='login'">Back to sign in</a>
+        <p v-if="authError" class="error">{{ authError }}</p>
+      </div>
+    </div>
+
+    <!-- ===== MAIN APP ===== -->
+    <div v-if="currentUser" class="app-layout">
+
+      <!-- Top nav -->
+      <nav class="top-nav">
+        <span class="logo">💬 Webchat</span>
+        <div class="nav-links">
+          <button @click="mainView='rooms-public'">Public Rooms</button>
+          <button @click="mainView='rooms-private'">Private Rooms</button>
+          <button @click="mainView='contacts'">Contacts</button>
+          <button @click="mainView='sessions'">Sessions</button>
+        </div>
+        <div class="nav-user">
+          <span>{{ currentUser.username }}</span>
+          <button @click="logout" class="btn-secondary">Sign out</button>
+        </div>
+      </nav>
+
+      <div class="main-content">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" :class="{ compact: activeRoom }">
+          <input v-model="sidebarSearch" type="text" placeholder="Search..." class="search-input" />
+
+          <section>
+            <h4>ROOMS</h4>
+            <div
+              v-for="room in myRooms"
+              :key="room.id"
+              class="sidebar-item"
+              :class="{ active: activeRoom?.id === room.id }"
+              @click="openRoom(room)"
+            >
+              <span># {{ room.name }}</span>
+              <span v-if="unreadCounts[room.id]" class="badge">{{ unreadCounts[room.id] > 99 ? '99+' : unreadCounts[room.id] }}</span>
+            </div>
+            <button @click="showCreateRoom = true" class="btn-ghost">+ Create room</button>
+          </section>
+
+          <section>
+            <h4>CONTACTS</h4>
+            <div
+              v-for="friend in friends"
+              :key="friend.id"
+              class="sidebar-item"
+              @click="openDM(friend)"
+            >
+              <span class="presence-dot" :class="getPresence(friend.id)"></span>
+              {{ friend.username }}
+              <span v-if="unreadCounts['dm:'+friend.id]" class="badge">{{ unreadCounts['dm:'+friend.id] }}</span>
+            </div>
+          </section>
+        </aside>
+
+        <!-- Chat area -->
+        <main class="chat-area" v-if="activeRoom">
+          <div class="chat-header">
+            <strong># {{ activeRoom.name }}</strong>
+            <span class="room-desc">{{ activeRoom.description }}</span>
+            <button @click="showManageRoom = true" v-if="isAdminOfActive" class="btn-ghost">Manage room</button>
+          </div>
+
+          <div class="messages" ref="messagesEl" @scroll="onScroll">
+            <div v-if="loadingMore" class="loading">Loading older messages...</div>
+            <div
+              v-for="msg in messages"
+              :key="msg.id"
+              class="message"
+              :class="{ own: msg.authorId === currentUser.id }"
+            >
+              <!-- Reply reference -->
+              <div v-if="msg.replyTo" class="reply-ref">
+                <span v-if="msg.replyTo.deleted" class="deleted-ref">🚫 Deleted message</span>
+                <span v-else>> {{ msg.replyTo.author.username }}: {{ msg.replyTo.content }}</span>
+              </div>
+              <div class="msg-header">
+                <strong>{{ msg.author.username }}</strong>
+                <span class="timestamp">{{ formatTime(msg.createdAt) }}</span>
+                <span v-if="msg.edited" class="edited-label">edited</span>
+              </div>
+              <div v-if="msg.deleted" class="msg-deleted">This message was deleted</div>
+              <div v-else class="msg-content">{{ msg.content }}</div>
+              <!-- Attachments -->
+              <div v-for="att in msg.attachments" :key="att.id" class="attachment">
+                <img v-if="att.hasThumb" :src="`/api/files/${att.id}/thumb`" class="thumb" @click="downloadFile(att)" />
+                <div v-else class="file-chip" @click="downloadFile(att)">📎 {{ att.originalName }}</div>
+                <div v-if="att.comment" class="att-comment">{{ att.comment }}</div>
+              </div>
+              <!-- Actions -->
+              <div class="msg-actions" v-if="!msg.deleted">
+                <button @click="replyTo = msg" title="Reply">↩</button>
+                <button v-if="msg.authorId === currentUser.id" @click="startEdit(msg)" title="Edit">✏️</button>
+                <button v-if="msg.authorId === currentUser.id || isAdminOfActive" @click="deleteMsg(msg)" title="Delete">🗑</button>
+              </div>
+            </div>
+            <div class="typing-indicator" v-if="typingUsers.size > 0">
+              {{ [...typingUsers].join(', ') }} {{ typingUsers.size === 1 ? 'is' : 'are' }} typing...
+            </div>
+          </div>
+
+          <!-- Input area -->
+          <div class="input-area">
+            <div v-if="replyTo" class="reply-banner">
+              Replying to <strong>{{ replyTo.author.username }}</strong>: {{ replyTo.content?.slice(0,60) }}
+              <button @click="replyTo = null">✕</button>
+            </div>
+            <div v-if="editingMsg" class="reply-banner editing">
+              Editing message <button @click="cancelEdit">✕</button>
+            </div>
+            <div class="input-row">
+              <button @click="$refs.fileInput.click()" title="Attach file">📎</button>
+              <input ref="fileInput" type="file" style="display:none" @change="handleFileSelect" />
+              <textarea
+                v-model="inputText"
+                @keydown.enter.exact.prevent="sendOrEdit"
+                @keydown="onTyping"
+                placeholder="Type a message..."
+                rows="1"
+              ></textarea>
+              <button @click="sendOrEdit" class="btn-primary">Send</button>
+            </div>
+          </div>
+        </main>
+
+        <!-- Welcome / catalog view -->
+        <main class="chat-area welcome" v-else>
+          <div v-if="mainView === 'rooms-public'">
+            <h2>Public Rooms</h2>
+            <input v-model="roomSearch" placeholder="Search rooms..." class="search-input" />
+            <div v-for="room in publicRooms" :key="room.id" class="room-card">
+              <strong># {{ room.name }}</strong>
+              <span>{{ room.description }}</span>
+              <span class="member-count">{{ room.memberCount }} members</span>
+              <button @click="joinRoom(room)" class="btn-primary">Join</button>
+            </div>
+          </div>
+          <div v-else-if="mainView === 'contacts'">
+            <h2>Contacts</h2>
+            <input v-model="friendSearch" placeholder="Add friend by username..." class="search-input" />
+            <button @click="sendFriendRequest" class="btn-primary">Send request</button>
+          </div>
+          <div v-else class="placeholder">Select a room or contact to start chatting</div>
+        </main>
+
+        <!-- Members panel -->
+        <aside class="members-panel" v-if="activeRoom">
+          <div class="room-info">
+            <strong>{{ activeRoom.isPublic ? 'Public' : 'Private' }} room</strong>
+            <div>Owner: {{ activeRoom.owner?.username }}</div>
+          </div>
+          <h4>Members ({{ roomMembers.length }})</h4>
+          <div v-for="m in roomMembers" :key="m.userId" class="member-item">
+            <span class="presence-dot" :class="getPresence(m.userId)"></span>
+            {{ m.user.username }}
+            <span v-if="m.isAdmin" class="admin-badge">admin</span>
+          </div>
+          <button @click="showInvite = true" v-if="!activeRoom.isPublic" class="btn-ghost">Invite user</button>
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Create room modal -->
+    <div v-if="showCreateRoom" class="modal-overlay" @click.self="showCreateRoom=false">
+      <div class="modal">
+        <h3>Create Room</h3>
+        <input v-model="newRoom.name" placeholder="Room name" />
+        <input v-model="newRoom.description" placeholder="Description (optional)" />
+        <label><input v-model="newRoom.isPublic" type="checkbox" /> Public room</label>
+        <div class="modal-actions">
+          <button @click="createRoom" class="btn-primary">Create</button>
+          <button @click="showCreateRoom=false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invite modal -->
+    <div v-if="showInvite" class="modal-overlay" @click.self="showInvite=false">
+      <div class="modal">
+        <h3>Invite to {{ activeRoom?.name }}</h3>
+        <input v-model="inviteUsername" placeholder="Username" />
+        <div class="modal-actions">
+          <button @click="inviteUser" class="btn-primary">Send invite</button>
+          <button @click="showInvite=false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications panel -->
+    <div v-if="notifications.length > 0" class="notifications-panel">
+      <div v-for="n in notifications" :key="n.id" class="notification-item">
+        <span v-if="n.type==='FRIEND_REQUEST'">👤 Friend request from user {{ n.payload.fromUserId }}</span>
+        <span v-if="n.type==='ROOM_INVITE'">💬 Invited to <strong>{{ n.payload.roomName }}</strong></span>
+        <div class="notif-actions">
+          <button @click="respondNotification(n, true)" class="btn-primary">Accept</button>
+          <button @click="respondNotification(n, false)">Decline</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
