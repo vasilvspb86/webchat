@@ -4,9 +4,15 @@ import { config } from 'dotenv'
 config({ path: '.env.test' })
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      bcrypt: 'bcryptjs',
+    },
+  },
   test: {
     environment: 'node',
     globals: false,
+    fileParallelism: false,
     include: ['src/__tests__/**/*.test.js'],
     testTimeout: 10000,
     coverage: {
