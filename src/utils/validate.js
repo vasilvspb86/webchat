@@ -25,3 +25,9 @@ export function validateEmail(email) {
   if (!email.includes('@') || !email.includes('.')) return 'Invalid email address'
   return null
 }
+
+export function validateConfirmPassword(password, confirmPassword) {
+  if (!confirmPassword) return 'Password confirmation is required'
+  if (password !== confirmPassword) return 'Passwords do not match'
+  return null
+}

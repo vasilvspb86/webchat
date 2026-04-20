@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateMessageContent, validatePassword, validateUsername, validateEmail } from '../utils/validate.js'
+import { validateMessageContent, validatePassword, validateUsername, validateEmail, validateConfirmPassword } from '../utils/validate.js'
 
 describe('validateMessageContent', () => {
   it('returns null for valid content', () => {
@@ -72,5 +72,17 @@ describe('validateEmail', () => {
 
   it('rejects empty email', () => {
     expect(validateEmail('')).not.toBeNull()
+  })
+})
+
+describe('validateConfirmPassword', () => {
+  it('returns null when passwords match', () => {
+    expect(validateConfirmPassword('abcdef', 'abcdef')).toBeNull()
+  })
+  it('rejects when passwords differ', () => {
+    expect(validateConfirmPassword('abcdef', 'abcdeg')).not.toBeNull()
+  })
+  it('rejects missing confirmPassword', () => {
+    expect(validateConfirmPassword('abcdef', '')).not.toBeNull()
   })
 })
