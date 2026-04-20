@@ -1,9 +1,14 @@
 import { defineConfig } from 'vitest/config'
+import { config } from 'dotenv'
+
+config({ path: '.env.test' })
 
 export default defineConfig({
   test: {
-    globals: true,
     environment: 'node',
+    globals: false,
+    include: ['src/__tests__/**/*.test.js'],
+    testTimeout: 10000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
