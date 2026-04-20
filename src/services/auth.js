@@ -81,3 +81,16 @@ export async function resetPassword(prisma, { token, newPassword }) {
     prisma.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ${row.userId}`,
   ])
 }
+
+export async function changePassword(prisma, { userId, currentPassword, newPassword, currentSid }) {
+  if (validatePassword(newPassword)) throw new AuthError('INVALID_PASSWORD', validatePassword(newPassword))
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user || user.deletedAt || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw new AuthError('INVALID_CREDENTIALS', 'Current password is incorrect')
+  }
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST)
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    prisma.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ${userId} AND sid <> ${currentSid}`,
+  ])
+}
