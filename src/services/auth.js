@@ -34,3 +34,14 @@ export async function register(prisma, { email, username, password, confirmPassw
     throw err
   }
 }
+
+export async function login(prisma, { email, password }) {
+  if (!email || !password) throw new AuthError('INVALID_INPUT', 'Email and password are required')
+  const user = await prisma.user.findFirst({
+    where: { email: email.toLowerCase(), deletedAt: null },
+  })
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    throw new AuthError('INVALID_CREDENTIALS', 'Invalid email or password')
+  }
+  return { id: user.id, email: user.email, username: user.username }
+}
