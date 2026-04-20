@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { testPrisma, resetDb } from '../helpers/db.js'
-import { register, AuthError } from '../../services/auth.js' // eslint-disable-line no-unused-vars
+import { register } from '../../services/auth.js'
 
 const valid = { email: 'a@b.c', username: 'alice', password: 'pw1234', confirmPassword: 'pw1234' }
 
