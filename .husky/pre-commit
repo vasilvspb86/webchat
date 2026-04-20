@@ -1,0 +1,3 @@
+#!/bin/sh
+# Pre-commit: lint + full test suite must pass before any commit
+npm run lint && npm run test:run

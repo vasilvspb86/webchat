@@ -1,15 +1,26 @@
-require('dotenv').config()
-const express = require('express')
-const http = require('http')
-const { Server } = require('socket.io')
-const session = require('express-session')
-const connectPgSimple = require('connect-pg-simple')
-const path = require('path')
-const { PrismaClient } = require('@prisma/client')
+import 'dotenv/config'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import express from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
+import session from 'express-session'
+import connectPgSimple from 'connect-pg-simple'
+import { PrismaClient } from '@prisma/client'
+import authRouter from './routes/auth.js'
+import roomsRouter from './routes/rooms.js'
+import messagesRouter from './routes/messages.js'
+import filesRouter from './routes/files.js'
+import usersRouter from './routes/users.js'
+import notificationsRouter from './routes/notifications.js'
+import { initSocket } from './socket/index.js'
+import { startCleanupJob } from './jobs/cleanup.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const prisma = new PrismaClient()
 const app = express()
-const server = http.createServer(app)
+const server = createServer(app)
 const io = new Server(server)
 
 const PgSession = connectPgSimple(session)
@@ -23,50 +34,33 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    // maxAge set per-login based on "keep me signed in"
-  },
+  cookie: { httpOnly: true, sameSite: 'lax' },
 })
 
 app.use(sessionMiddleware)
 app.use(express.json())
-app.use(express.static(path.join(__dirname, '../public')))
-
-// Share session middleware with Socket.io
+app.use(express.static(join(__dirname, '../public')))
 io.engine.use(sessionMiddleware)
 
-// Make shared instances available to routes via app.locals
 app.locals.prisma = prisma
 app.locals.io = io
 
-// REST routes
-app.use('/api/auth', require('./routes/auth'))
-app.use('/api/rooms', require('./routes/rooms'))
-app.use('/api/messages', require('./routes/messages'))
-app.use('/api/files', require('./routes/files'))
-app.use('/api/users', require('./routes/users'))
-app.use('/api/notifications', require('./routes/notifications'))
+app.use('/api/auth', authRouter)
+app.use('/api/rooms', roomsRouter)
+app.use('/api/messages', messagesRouter)
+app.use('/api/files', filesRouter)
+app.use('/api/users', usersRouter)
+app.use('/api/notifications', notificationsRouter)
 
-// Socket.io handlers
-require('./socket')(io, prisma)
+initSocket(io, prisma)
+startCleanupJob(prisma)
 
-// Background cleanup job (expired notifications)
-require('./jobs/cleanup')(prisma)
+app.get('*', (_req, res) => res.sendFile(join(__dirname, '../public/index.html')))
 
-// SPA fallback — serve index.html for any non-API route
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'))
-})
-
-// Global error handler
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' })
 })
 
 const PORT = process.env.PORT || 3000
-server.listen(PORT, () => {
-  console.log(`Webchat running on http://localhost:${PORT}`)
-})
+server.listen(PORT, () => console.log(`Webchat running on http://localhost:${PORT}`))
