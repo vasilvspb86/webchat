@@ -20,6 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const prisma = new PrismaClient()
 const app = express()
+app.set('trust proxy', 1) // required for secure cookies behind TLS-terminating proxies
 const server = createServer(app)
 const io = new Server(server)
 
