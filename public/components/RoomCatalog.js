@@ -149,12 +149,12 @@ app.component('room-catalog', {
           <a href="#/invitations" @click.prevent="openInvitations">Invitations</a>
           <a href="#" @click.prevent>Friends</a>
         </nav>
-        <div class="ep-app__user">
+        <a class="ep-app__user" href="/profile" @click.prevent="$emit('navigate','/profile')" aria-label="Go to profile">
           <span class="ep-muted" v-if="me">@{{ me.username }}</span>
           <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">
             {{ (me && me.username ? me.username[0] : '?').toUpperCase() }}
           </span>
-        </div>
+        </a>
       </header>
 
       <main class="ep-app__main ep-layout-single">

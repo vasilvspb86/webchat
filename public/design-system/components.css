@@ -564,7 +564,8 @@ body::before {
 }
 .ep-app__nav a:hover { color: var(--text-body); background: var(--surface-raised); }
 .ep-app__nav a.ep-is-active { color: var(--accent-primary-hi); }
-.ep-app__user { display: flex; align-items: center; gap: var(--space-3); color: var(--text-muted); }
+.ep-app__user { display: flex; align-items: center; gap: var(--space-3); color: var(--text-muted); text-decoration: none; cursor: pointer; }
+.ep-app__user:hover { color: var(--text-body); }
 
 .ep-app__main { flex: 1; display: grid; gap: 0; }
 

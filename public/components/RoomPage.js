@@ -149,10 +149,10 @@ app.component('room-page', {
           <a href="#/rooms" class="ep-is-active" @click.prevent="goRooms">Rooms</a>
           <a href="#/invitations" @click.prevent="goInvitations">Invitations</a>
         </nav>
-        <div class="ep-app__user" v-if="me">
+        <a class="ep-app__user" v-if="me" href="/profile" @click.prevent="$emit('navigate','/profile')" aria-label="Go to profile">
           <span class="ep-muted">@{{ me.username }}</span>
           <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">{{ (me.username || '?').charAt(0).toUpperCase() }}</span>
-        </div>
+        </a>
       </header>
 
       <div v-if="flash" class="flash" role="status" aria-live="polite">{{ flash }}</div>
