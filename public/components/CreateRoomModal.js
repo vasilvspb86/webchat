@@ -63,7 +63,6 @@ app.component('create-room-modal', {
         }
         const { room } = await api('POST', '/api/rooms', body)
         emit('created', room)
-        emit('close')
       } catch (e) {
         mapServerError(e)
         await focusFirstError()

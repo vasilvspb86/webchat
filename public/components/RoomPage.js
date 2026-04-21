@@ -47,8 +47,8 @@ app.component('room-page', {
           api('GET', `/api/rooms/${props.roomId}/members`),
           api('GET', '/api/auth/me').catch(() => ({ user: null })),
         ])
-        room.value = r
-        members.value = Array.isArray(ms) ? ms : []
+        room.value = r?.room || r
+        members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
         me.value = auth.user || null
       } catch (e) {
         status.value = e?.status === 404 ? 'notfound' : 'error'
