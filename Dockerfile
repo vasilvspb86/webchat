@@ -5,7 +5,7 @@ RUN apk add --no-cache python3 make g++ vips-dev
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --only=production --ignore-scripts
 
 COPY prisma ./prisma
 RUN npx prisma generate
