@@ -141,7 +141,7 @@ export async function deleteAccount(prisma, { userId }) {
         deletedAt: new Date(),
         email: `deleted-${userId}-${user.email}`,
         username: `deleted-${userId}-${user.username}`,
-        passwordHash: '!',
+        passwordHash: '!', // intentionally invalid bcrypt hash → bcrypt.compare always returns false
       },
     })
     // Purge all session rows for this user

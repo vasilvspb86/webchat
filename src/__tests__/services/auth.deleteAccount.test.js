@@ -52,4 +52,15 @@ describe('deleteAccount', () => {
     expect(reused.email).toBe('a@b.c')
     expect(reused.username).toBe('alice')
   })
+
+  it('throws NOT_FOUND for unknown userId', async () => {
+    await expect(deleteAccount(testPrisma, { userId: 'does-not-exist' }))
+      .rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  it('throws NOT_FOUND on already-deleted user', async () => {
+    await deleteAccount(testPrisma, { userId })
+    await expect(deleteAccount(testPrisma, { userId }))
+      .rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
 })
