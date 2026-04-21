@@ -94,3 +94,25 @@ export async function changePassword(prisma, { userId, currentPassword, newPassw
     prisma.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ${userId} AND sid <> ${currentSid}`,
   ])
 }
+
+export async function listSessions(prisma, { userId, currentSid }) {
+  const rows = await prisma.user_sessions.findMany({
+    where: { expire: { gt: new Date() } },
+  })
+  return rows
+    .filter((r) => r.sess?.userId === userId)
+    .map((r) => ({
+      sid: r.sid,
+      userAgent: r.sess.userAgent || 'Unknown',
+      ip: r.sess.ip || 'Unknown',
+      createdAt: r.sess.createdAt || null,
+      expire: r.expire,
+      isCurrent: r.sid === currentSid,
+    }))
+}
+
+export async function revokeSession(prisma, { userId, sid }) {
+  const row = await prisma.user_sessions.findUnique({ where: { sid } })
+  if (!row || row.sess?.userId !== userId) throw new AuthError('NOT_FOUND', 'Session not found')
+  await prisma.user_sessions.delete({ where: { sid } })
+}
