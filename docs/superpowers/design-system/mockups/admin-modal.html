@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Admin modal — Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    .ep-modal.ep-modal--admin { width: min(100%, 880px); height: min(100%, 640px); }
+    .ep-modal--admin .ep-modal__body { padding: 0; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+
+    .admin-pane { padding: var(--space-7) var(--space-8); display: grid; gap: var(--space-5); overflow-y: auto; }
+    .admin-pane__bar {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+      padding-bottom: var(--space-4);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+    }
+    .admin-pane__bar input {
+      height: 36px; width: 280px;
+      padding: 0 var(--space-4);
+      background: var(--surface-sunken);
+      border: var(--stroke-hair) solid var(--edge-quiet);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary); font: inherit; font-size: var(--text-sm);
+      outline: none;
+    }
+    .admin-list { display: grid; gap: var(--space-1); }
+
+    .mr { /* member row wider — includes extra columns for admin context */
+      display: grid;
+      grid-template-columns: auto 1fr auto auto auto;
+      align-items: center;
+      gap: var(--space-5);
+      padding: var(--space-4) var(--space-4);
+      border-radius: var(--radius-md);
+      list-style: none;
+      transition: background var(--dur-quick);
+    }
+    .mr:hover { background: var(--bg-float); }
+    .mr__name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .mr__name strong { font-weight: var(--weight-medium); color: var(--text-primary); }
+    .mr__name span.ep-mono { font-size: var(--text-xs); color: var(--text-muted); }
+    .mr__actions { display: flex; gap: var(--space-2); }
+
+    /* Settings tab — form fields */
+    .settings-grid { display: grid; gap: var(--space-7); max-width: 560px; }
+    .settings-danger {
+      border: var(--stroke-hair) solid color-mix(in oklab, var(--danger) 32%, transparent);
+      background: color-mix(in oklab, var(--danger) 6%, transparent);
+      padding: var(--space-6);
+      border-radius: var(--radius-lg);
+      display: grid; gap: var(--space-4);
+    }
+    .settings-danger h3 { font-family: var(--font-display); font-size: var(--text-lg); color: var(--danger-hi); }
+
+    .swatch {
+      position: fixed; top: var(--space-5); right: var(--space-5);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono); font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+
+    /* Backdrop: faint room page for context */
+    .bg-room {
+      position: absolute; inset: 0;
+      background: var(--atmosphere-warm);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 04 · admin modal (Members tab)</div>
+
+<div class="bg-room" aria-hidden="true"></div>
+
+<div class="ep-modal-root" role="dialog" aria-modal="true" aria-labelledby="m-admin-title">
+  <div class="ep-modal-scrim" tabindex="-1"></div>
+
+  <div class="ep-modal ep-modal--admin">
+    <header class="ep-modal__head" style="padding-bottom:var(--space-4);">
+      <div class="ep-modal__head-text">
+        <span class="ep-eyebrow">Coffee corner · admin</span>
+        <h2 class="ep-headline" id="m-admin-title">Manage the room</h2>
+      </div>
+      <button class="ep-btn ep-btn--icon" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+
+    <div class="ep-modal__body">
+
+      <nav class="ep-tabs" role="tablist">
+        <button class="ep-tabs__tab ep-is-active" role="tab" aria-selected="true">
+          Members <span class="ep-mono ep-tabs__count">142</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab">
+          Admins <span class="ep-mono ep-tabs__count">3</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab">
+          Banned <span class="ep-mono ep-tabs__count">2</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab">
+          Invitations <span class="ep-mono ep-tabs__count">4</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab">Settings</button>
+      </nav>
+
+      <!-- Active panel: Members -->
+      <section class="admin-pane" role="tabpanel" aria-label="Members">
+        <div class="admin-pane__bar">
+          <span class="ep-muted ep-body">Everyone currently in the room.</span>
+          <input type="search" placeholder="Find a member…">
+        </div>
+
+        <ul class="admin-list">
+          <li class="mr">
+            <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+            <span class="mr__name"><strong>@victoria</strong><span class="ep-mono">joined Mar 3, 2025</span></span>
+            <span class="ep-chip ep-chip--owner">Owner</span>
+            <span class="ep-presence-dot" data-presence="online" aria-label="Online"></span>
+            <div class="mr__actions">
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" disabled>Demote</button>
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" disabled>Ban</button>
+            </div>
+          </li>
+          <li class="mr">
+            <span class="ep-avatar ep-avatar--md" data-tint="gold" aria-hidden="true">M</span>
+            <span class="mr__name"><strong>@marco</strong><span class="ep-mono">joined Mar 4, 2025</span></span>
+            <span class="ep-chip ep-chip--admin">Admin</span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <div class="mr__actions">
+              <button class="ep-btn ep-btn--ghost ep-btn--sm">Demote</button>
+              <button class="ep-btn ep-btn--danger ep-btn--sm">Ban</button>
+            </div>
+          </li>
+          <li class="mr">
+            <span class="ep-avatar ep-avatar--md" data-tint="moss" aria-hidden="true">J</span>
+            <span class="mr__name"><strong>@jun</strong><span class="ep-mono">joined Mar 12, 2025</span></span>
+            <span class="ep-chip ep-chip--member">Member</span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <div class="mr__actions">
+              <button class="ep-btn ep-btn--gold ep-btn--sm">Promote</button>
+              <button class="ep-btn ep-btn--danger ep-btn--sm">Ban</button>
+            </div>
+          </li>
+          <li class="mr">
+            <span class="ep-avatar ep-avatar--md" data-tint="tide" aria-hidden="true">A</span>
+            <span class="mr__name"><strong>@ana</strong><span class="ep-mono">joined Apr 1, 2025</span></span>
+            <span class="ep-chip ep-chip--member">Member</span>
+            <span class="ep-presence-dot" data-presence="away"></span>
+            <div class="mr__actions">
+              <button class="ep-btn ep-btn--gold ep-btn--sm">Promote</button>
+              <button class="ep-btn ep-btn--danger ep-btn--sm">Ban</button>
+            </div>
+          </li>
+          <li class="mr">
+            <span class="ep-avatar ep-avatar--md" aria-hidden="true">K</span>
+            <span class="mr__name"><strong>@kenji</strong><span class="ep-mono">joined Apr 5, 2025</span></span>
+            <span class="ep-chip ep-chip--member">Member</span>
+            <span class="ep-presence-dot" data-presence="offline"></span>
+            <div class="mr__actions">
+              <button class="ep-btn ep-btn--gold ep-btn--sm">Promote</button>
+              <button class="ep-btn ep-btn--danger ep-btn--sm">Ban</button>
+            </div>
+          </li>
+        </ul>
+
+        <!-- Other tabs reference (not rendered) — comment block for Phase 8
+             Banned tab: same row shape, "Unban" action, banned-by line in __name.
+             Invitations tab: list of pending invites with Revoke + resend.
+             Settings tab: name / description / visibility form + danger section.
+        -->
+      </section>
+
+    </div>
+
+    <footer class="ep-modal__foot">
+      <span class="ep-muted ep-body" style="margin-right:auto;font-size:var(--text-xs);">
+        Changes are saved when you act. Socket.io pushes updates to every member in real time.
+      </span>
+      <button class="ep-btn ep-btn--ghost">Close</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ── Secondary mockup: Settings tab, rendered below for reference ── -->
+<div style="padding:var(--space-12) var(--space-8);max-width:var(--content-wide);margin:0 auto;opacity:0.96;">
+  <p class="ep-eyebrow" style="margin-bottom:var(--space-5);">reference · settings tab contents</p>
+  <div style="background:var(--surface-floating);border:var(--stroke-hair) solid var(--edge-default);border-radius:var(--radius-modal);padding:var(--space-8);box-shadow:var(--shadow-md);">
+    <div class="settings-grid">
+      <label class="ep-field">
+        <span class="ep-field__label">Name</span>
+        <span class="ep-field__hint">Shown across the catalog and in member lists.</span>
+        <input class="ep-field__input" type="text" maxlength="50" value="Coffee corner">
+        <span class="ep-field__counter ep-mono">13 / 50</span>
+      </label>
+      <label class="ep-field">
+        <span class="ep-field__label">Description</span>
+        <span class="ep-field__hint">Up to 500 characters.</span>
+        <textarea class="ep-field__textarea" maxlength="500" rows="3">Roasts, brews, and the slow hours before the day gets loud.</textarea>
+        <span class="ep-field__counter ep-mono">61 / 500</span>
+      </label>
+      <label class="ep-field ep-field--toggle">
+        <span class="ep-field__label">Visibility</span>
+        <span class="ep-field__hint">Flipping to private removes this room from the catalog immediately.</span>
+        <div class="ep-toggle" role="radiogroup">
+          <button type="button" class="ep-toggle__option ep-is-active">Public</button>
+          <button type="button" class="ep-toggle__option">Private</button>
+        </div>
+      </label>
+
+      <div class="settings-danger">
+        <h3>Delete this room</h3>
+        <p class="ep-body ep-muted">All messages, members, and bans will be removed. Socket.io will broadcast
+          <span class="ep-mono">room_deleted</span> to everyone present. This cannot be undone.</p>
+        <div>
+          <button class="ep-btn ep-btn--danger">Delete room permanently</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

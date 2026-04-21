@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Create room — Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    /* Dimmed catalog background so modal has context */
+    .bg-catalog {
+      filter: saturate(0.6) brightness(0.72);
+      pointer-events: none;
+      padding: var(--space-12) var(--space-8);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-7);
+      max-width: var(--content-wide);
+      margin: 0 auto;
+      opacity: 0.5;
+    }
+    .bg-catalog .ep-card::before { display: none; }
+    .bg-catalog .ep-card:hover   { transform: none; box-shadow: none; border-color: var(--edge-quiet); }
+
+    /* create-specific modal width */
+    .ep-modal.ep-modal--create { width: min(100%, 560px); }
+
+    .create-form { display: grid; gap: var(--space-7); }
+
+    /* Sample note beside modal */
+    .swatch-modal {
+      position: fixed;
+      top: var(--space-8);
+      right: var(--space-8);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch-modal">screen 02 · create-room modal (over catalog)</div>
+
+<!-- ─── faint catalog grid behind ────────────────────────────────────── -->
+<div class="bg-catalog" aria-hidden="true">
+  <article class="ep-card ep-room-card"><header class="ep-room-card__head"><h3 class="ep-headline ep-headline--sm">Coffee corner</h3></header><p class="ep-body ep-body--clamp-3 ep-muted">Roasts, brews, slow hours.</p></article>
+  <article class="ep-card ep-room-card"><header class="ep-room-card__head"><h3 class="ep-headline ep-headline--sm">Sunday long run</h3></header><p class="ep-body ep-body--clamp-3 ep-muted">Weekly routes.</p></article>
+  <article class="ep-card ep-room-card"><header class="ep-room-card__head"><h3 class="ep-headline ep-headline--sm">Late desk</h3></header><p class="ep-body ep-body--clamp-3 ep-muted">Past midnight chatter.</p></article>
+  <article class="ep-card ep-room-card"><header class="ep-room-card__head"><h3 class="ep-headline ep-headline--sm">The Oulipo annex</h3></header><p class="ep-body ep-body--clamp-3 ep-muted">Constraint writing.</p></article>
+</div>
+
+<!-- ─── modal ────────────────────────────────────────────────────────── -->
+<div class="ep-modal-root" role="dialog" aria-modal="true" aria-labelledby="m-create-title">
+  <div class="ep-modal-scrim" tabindex="-1"></div>
+
+  <div class="ep-modal ep-modal--create">
+    <header class="ep-modal__head">
+      <div class="ep-modal__head-text">
+        <span class="ep-eyebrow">New gathering</span>
+        <h2 class="ep-headline" id="m-create-title">Open a <em style="font-style:italic;color:var(--accent-primary-hi);">room</em>.</h2>
+        <p class="ep-muted ep-body">Give it a name people will recognise across the catalog.</p>
+      </div>
+      <button class="ep-btn ep-btn--icon" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+
+    <div class="ep-modal__body">
+      <form class="create-form" autocomplete="off">
+
+        <label class="ep-field">
+          <span class="ep-field__label">Room name</span>
+          <span class="ep-field__hint">3–50 characters. Letters, numbers, dashes.</span>
+          <input class="ep-field__input" type="text" name="name" maxlength="50" placeholder="coffee-corner" value="coffee-corner">
+          <span class="ep-field__counter ep-mono">13 / 50</span>
+        </label>
+
+        <label class="ep-field">
+          <span class="ep-field__label">Description <span class="ep-muted" style="text-transform:none;letter-spacing:0;font-weight:400;">(optional)</span></span>
+          <span class="ep-field__hint">Up to 500 characters. One line is fine.</span>
+          <textarea class="ep-field__textarea" name="description" maxlength="500" rows="3" placeholder="Roasts, brews, and the slow hours before the day gets loud.">Roasts, brews, and the slow hours before the day gets loud.</textarea>
+          <span class="ep-field__counter ep-mono">61 / 500</span>
+        </label>
+
+        <label class="ep-field ep-field--toggle">
+          <span class="ep-field__label">Visibility</span>
+          <span class="ep-field__hint">Public rooms appear in the catalog. Private rooms are invite-only.</span>
+          <div class="ep-toggle" role="radiogroup" aria-label="Visibility">
+            <button type="button" class="ep-toggle__option ep-is-active" role="radio" aria-checked="true">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="4.5"/><path d="M1.5 6h9M6 1.5c2 1.2 2 7.8 0 9M6 1.5c-2 1.2-2 7.8 0 9"/></svg>
+              Public
+            </button>
+            <button type="button" class="ep-toggle__option" role="radio" aria-checked="false">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5.5" width="6" height="4.5" rx="0.8"/><path d="M4.5 5.5V4a1.5 1.5 0 013 0v1.5"/></svg>
+              Private
+            </button>
+          </div>
+        </label>
+
+        <!-- Example error state (uncomment to preview) -->
+        <!-- <div class="ep-field ep-has-error"><span class="ep-field__error" role="alert">A room named “coffee-corner” already exists.</span></div> -->
+      </form>
+    </div>
+
+    <footer class="ep-modal__foot">
+      <span class="ep-muted ep-body" style="margin-right:auto;font-size:var(--text-xs);">
+        You'll become the first member and only admin.
+      </span>
+      <button class="ep-btn ep-btn--ghost">Cancel</button>
+      <button class="ep-btn ep-btn--primary" type="submit">
+        Create room
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 7h12M8 2l5 5-5 5"/></svg>
+      </button>
+    </footer>
+  </div>
+</div>
+
+</body>
+</html>

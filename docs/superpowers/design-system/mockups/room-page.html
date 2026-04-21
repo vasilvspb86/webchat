@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Room page — Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    .ep-app__main { min-height: calc(100vh - var(--nav-h)); }
+
+    /* Room header */
+    .room-header {
+      display: grid;
+      gap: var(--space-5);
+      padding: var(--space-10) var(--space-10) var(--space-7);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+      position: relative;
+    }
+    .room-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 180px;
+      background: radial-gradient(600px 180px at 20% 0%, var(--accent-primary-veil), transparent 70%);
+      pointer-events: none;
+    }
+    .room-header__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); position: relative; z-index: 1; }
+    .room-header__name { display: grid; gap: var(--space-3); }
+    .room-header__crumbs { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); }
+    .room-header__crumbs a { color: var(--text-muted); text-decoration: none; }
+    .room-header__crumbs a:hover { color: var(--text-body); }
+    .room-header__crumbs .sep { color: var(--text-faint); }
+
+    .room-header__title { display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; }
+    .room-header__title h1 { font-size: var(--text-3xl); font-variation-settings: 'opsz' 72, 'SOFT' 40, 'WONK' 0; }
+
+    .room-header__actions { display: flex; gap: var(--space-3); align-items: center; position: relative; z-index: 1; }
+
+    .room-header__desc { max-width: 72ch; position: relative; z-index: 1; }
+
+    .room-header__stats {
+      display: flex;
+      gap: var(--space-8);
+      padding-top: var(--space-4);
+      position: relative;
+      z-index: 1;
+    }
+    .room-header__stat { display: grid; gap: var(--space-1); }
+    .room-header__stat-value { font-family: var(--font-display); font-size: var(--text-xl); font-variation-settings: 'opsz' 36; color: var(--text-primary); }
+    .room-header__stat-label { font-size: var(--text-2xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); }
+
+    /* Main area stage (messages placeholder owned by messaging sub-project) */
+    .ep-stage {
+      position: relative;
+      padding: var(--space-10);
+      min-height: 540px;
+      display: grid;
+      gap: var(--space-5);
+    }
+    .ep-stage--empty {
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+      color: var(--text-faint);
+    }
+    .ep-stage--empty .ep-empty__art {
+      font-size: 96px;
+      color: var(--ink-fog);
+      opacity: 0.5;
+      text-shadow: none;
+    }
+    .ep-stage__note {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-faint);
+      max-width: 48ch;
+    }
+
+    /* Members panel */
+    .members { display: grid; gap: var(--space-5); }
+    .members__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+    }
+    .members__head .ep-eyebrow { color: var(--text-muted); }
+    .members__search input {
+      width: 100%;
+      height: 32px;
+      padding: 0 var(--space-4);
+      background: var(--surface-sunken);
+      border: var(--stroke-hair) solid var(--edge-quiet);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      font: inherit;
+      font-size: var(--text-xs);
+      outline: none;
+    }
+    .members__search input:focus { border-color: var(--accent-primary); }
+    .members__section { display: grid; gap: var(--space-1); }
+    .members__section-title {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-2xs);
+      letter-spacing: var(--tracking-caps);
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex; justify-content: space-between;
+    }
+
+    /* Tiny drop menu */
+    .row-menu { color: var(--text-faint); }
+    .ep-member-row:hover .row-menu { color: var(--text-body); }
+
+    .swatch {
+      position: fixed;
+      top: calc(var(--nav-h) + var(--space-4));
+      right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 03 · room page shell + members panel</div>
+
+<div class="ep-app">
+
+  <!-- Top nav -->
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#">Invitations</a>
+      <a href="#">Friends</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <!-- Room main layout -->
+  <main class="ep-app__main ep-layout-room">
+
+    <!-- ── primary pane: header + stage ────────────────────────────── -->
+    <section class="ep-pane ep-pane--primary" style="padding:0;">
+
+      <header class="room-header">
+        <div class="room-header__top">
+          <div class="room-header__name">
+            <div class="room-header__crumbs">
+              <a href="#">Rooms</a>
+              <span class="sep">/</span>
+              <span class="ep-muted">Public</span>
+              <span class="sep">/</span>
+            </div>
+            <div class="room-header__title">
+              <h1 class="ep-headline">Coffee corner</h1>
+              <span class="ep-chip ep-chip--public">Public</span>
+              <span class="ep-chip ep-chip--admin">You · Admin</span>
+            </div>
+          </div>
+
+          <div class="room-header__actions">
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h10M7 2v10"/></svg>
+              Invite
+            </button>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="2"/><path d="M11 7a4 4 0 11-8 0 4 4 0 018 0zM7 1v1.6M7 11.4V13M1 7h1.6M11.4 7H13"/></svg>
+              Settings
+            </button>
+            <button class="ep-btn ep-btn--danger ep-btn--sm">Leave room</button>
+          </div>
+        </div>
+
+        <p class="ep-body ep-body--lead ep-muted room-header__desc">
+          Roasts, brews, and the slow hours before the day gets loud. Share recipes,
+          roaster finds, or the one coffee order you can't forgive yourself for.
+        </p>
+
+        <div class="room-header__stats">
+          <div class="room-header__stat">
+            <span class="room-header__stat-value">142</span>
+            <span class="room-header__stat-label">members</span>
+          </div>
+          <div class="room-header__stat">
+            <span class="room-header__stat-value">38</span>
+            <span class="room-header__stat-label">online now</span>
+          </div>
+          <div class="room-header__stat">
+            <span class="room-header__stat-value">Mar 2025</span>
+            <span class="room-header__stat-label">opened</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- stage — left deliberately sparse; messaging sub-project owns it -->
+      <div class="ep-stage ep-stage--empty">
+        <div class="ep-empty__art" aria-hidden="true">&amp;</div>
+        <p class="ep-headline" style="color:var(--text-muted);font-size:var(--text-xl);">The room is ready.</p>
+        <p class="ep-stage__note">
+          This area is the message timeline owned by the <span class="ep-mono">messaging</span>
+          sub-project. The rooms layer only provides the shell, the members panel, and
+          the admin surfaces. Nothing will render here until messaging is wired in.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ── members panel ───────────────────────────────────────────── -->
+    <aside class="ep-pane ep-pane--members">
+      <div class="members">
+
+        <header class="members__head">
+          <span class="ep-eyebrow ep-eyebrow--quiet">Members · 142</span>
+          <button class="ep-btn ep-btn--icon ep-btn--sm" aria-label="Collapse panel">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2l-4 4 4 4"/></svg>
+          </button>
+        </header>
+
+        <div class="members__search">
+          <input type="search" placeholder="Find a member…">
+        </div>
+
+        <!-- Online -->
+        <div class="members__section">
+          <div class="members__section-title">
+            <span>Online</span><span class="ep-mono">8</span>
+          </div>
+
+          <li class="ep-member-row" data-presence="online">
+            <span class="ep-avatar ep-avatar--sm" data-tint="ember" aria-hidden="true">V</span>
+            <span class="ep-member-row__name">@victoria</span>
+            <span class="ep-chip ep-chip--admin">Owner</span>
+            <span class="ep-presence-dot" data-presence="online" aria-label="Online"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+
+          <li class="ep-member-row" data-presence="online">
+            <span class="ep-avatar ep-avatar--sm" data-tint="gold" aria-hidden="true">M</span>
+            <span class="ep-member-row__name">@marco</span>
+            <span class="ep-chip ep-chip--admin">Admin</span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+
+          <li class="ep-member-row" data-presence="online">
+            <span class="ep-avatar ep-avatar--sm" data-tint="moss" aria-hidden="true">J</span>
+            <span class="ep-member-row__name">@jun</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+
+          <li class="ep-member-row" data-presence="online">
+            <span class="ep-avatar ep-avatar--sm" data-tint="tide" aria-hidden="true">A</span>
+            <span class="ep-member-row__name">@ana</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+
+          <li class="ep-member-row" data-presence="online">
+            <span class="ep-avatar ep-avatar--sm" data-tint="rust" aria-hidden="true">S</span>
+            <span class="ep-member-row__name">@sara</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="online"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+        </div>
+
+        <!-- Away -->
+        <div class="members__section">
+          <div class="members__section-title">
+            <span>Away</span><span class="ep-mono">2</span>
+          </div>
+
+          <li class="ep-member-row" data-presence="away">
+            <span class="ep-avatar ep-avatar--sm" aria-hidden="true">T</span>
+            <span class="ep-member-row__name">@theo</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="away"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+        </div>
+
+        <!-- Offline (muted) -->
+        <div class="members__section">
+          <div class="members__section-title">
+            <span>Offline</span><span class="ep-mono">132</span>
+          </div>
+          <li class="ep-member-row" data-presence="offline">
+            <span class="ep-avatar ep-avatar--sm" aria-hidden="true">K</span>
+            <span class="ep-member-row__name">@kenji</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="offline"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+          <li class="ep-member-row" data-presence="offline">
+            <span class="ep-avatar ep-avatar--sm" aria-hidden="true">L</span>
+            <span class="ep-member-row__name">@lucia</span>
+            <span></span>
+            <span class="ep-presence-dot" data-presence="offline"></span>
+            <button class="ep-btn ep-btn--icon ep-btn--sm row-menu" aria-label="Actions">⋯</button>
+          </li>
+        </div>
+
+        <button class="ep-btn ep-btn--ghost ep-btn--sm" style="width:100%;justify-self:stretch;">
+          View all 142 →
+        </button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+</body>
+</html>

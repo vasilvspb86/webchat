@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Invitations — Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    .inbox {
+      max-width: var(--content-reading);
+      margin: 0 auto;
+      padding: var(--space-12) var(--space-8);
+      display: grid;
+      gap: var(--space-9);
+    }
+    .inbox__mast { display: grid; gap: var(--space-4); }
+    .inbox__rule { height: 2px; width: 64px; background: var(--info); border-radius: 2px; box-shadow: 0 0 16px var(--info-hi); }
+    .inbox__list { display: grid; gap: var(--space-5); }
+
+    .ep-inv-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-6);
+      align-items: center;
+      padding: var(--space-6) var(--space-7);
+      background: var(--surface-card);
+      border: var(--stroke-hair) solid var(--edge-quiet);
+      border-radius: var(--radius-lg);
+      transition: border-color var(--dur-quick), box-shadow var(--dur-quick), transform var(--dur-quick);
+    }
+    .ep-inv-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, var(--info) 0%, transparent 45%);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      opacity: 0.7;
+    }
+    .ep-inv-card:hover { border-color: var(--edge-default); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+    .ep-inv-card__icon {
+      display: grid; place-items: center;
+      width: 56px; height: 56px;
+      border-radius: var(--radius-lg);
+      background: var(--info-veil);
+      color: var(--info-hi);
+      border: var(--stroke-hair) solid color-mix(in oklab, var(--info) 40%, transparent);
+    }
+    .ep-inv-card__body { display: grid; gap: var(--space-2); min-width: 0; }
+    .ep-inv-card__head { display: flex; align-items: center; gap: var(--space-4); justify-content: space-between; }
+    .ep-inv-card__foot { display: flex; gap: var(--space-3); align-items: center; }
+
+    /* Expiring state */
+    .ep-inv-card[data-state="expiring"]::before { background: linear-gradient(90deg, var(--accent-gold) 0%, transparent 50%); }
+    .ep-inv-card[data-state="expiring"] .ep-inv-card__icon { background: var(--accent-gold-veil); color: var(--accent-gold-hi); border-color: color-mix(in oklab, var(--accent-gold) 50%, transparent); }
+    .ep-inv-card[data-state="expiring"] time { color: var(--accent-gold-hi); }
+
+    /* Expired state */
+    .ep-inv-card[data-state="expired"] { opacity: 0.65; }
+    .ep-inv-card[data-state="expired"]::before { background: linear-gradient(90deg, var(--danger) 0%, transparent 45%); opacity: 0.4; }
+    .ep-inv-card[data-state="expired"] .ep-inv-card__icon { background: var(--danger-veil); color: var(--danger-hi); border-color: color-mix(in oklab, var(--danger) 45%, transparent); }
+    .ep-inv-card[data-state="expired"] .ep-btn { pointer-events: none; opacity: 0.4; }
+    .ep-inv-card__expired-stamp {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: var(--text-sm);
+      color: var(--danger-hi);
+      border: var(--stroke-thin) solid var(--danger);
+      padding: 4px var(--space-3);
+      border-radius: var(--radius-sm);
+      transform: rotate(-4deg);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+    }
+
+    .swatch {
+      position: fixed; top: calc(var(--nav-h) + var(--space-4)); right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono); font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 05 · invitation inbox</div>
+
+<div class="ep-app">
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#" class="ep-is-active">Invitations</a>
+      <a href="#">Friends</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+    <section class="inbox">
+
+      <header class="inbox__mast">
+        <span class="ep-eyebrow ep-eyebrow--info">Your inbox</span>
+        <h1 class="ep-display">Open <em>doors</em>, someone held for you.</h1>
+        <div class="inbox__rule"></div>
+        <p class="ep-body ep-body--lead ep-muted" style="max-width:52ch;">
+          Private rooms require an invitation. Each one here is a standing offer.
+          Decline politely, accept before it expires, or let it lapse.
+        </p>
+      </header>
+
+      <div class="inbox__list">
+
+        <!-- Active -->
+        <article class="ep-inv-card" data-state="active">
+          <div class="ep-inv-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5l9 7 9-7M2 5v12h18V5M2 5h18"/></svg>
+          </div>
+          <div class="ep-inv-card__body">
+            <div class="ep-inv-card__head">
+              <span class="ep-eyebrow ep-eyebrow--info">Invitation</span>
+              <time class="ep-mono ep-muted" datetime="2026-04-28T12:00Z">expires in 6 days</time>
+            </div>
+            <h3 class="ep-headline ep-headline--sm">Sunday long run — planning</h3>
+            <p class="ep-muted ep-body">
+              from <strong style="color:var(--text-body);font-weight:var(--weight-medium);">@marco</strong>
+              · 38 members · private
+            </p>
+          </div>
+          <div class="ep-inv-card__foot">
+            <button class="ep-btn ep-btn--ghost">Decline</button>
+            <button class="ep-btn ep-btn--primary">Accept</button>
+          </div>
+        </article>
+
+        <!-- Expiring -->
+        <article class="ep-inv-card" data-state="expiring">
+          <div class="ep-inv-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="8"/><path d="M11 6v5l3 2"/></svg>
+          </div>
+          <div class="ep-inv-card__body">
+            <div class="ep-inv-card__head">
+              <span class="ep-eyebrow ep-eyebrow--gold">Expiring soon</span>
+              <time class="ep-mono" datetime="2026-04-22T08:00Z">expires in 14 hours</time>
+            </div>
+            <h3 class="ep-headline ep-headline--sm">Late desk</h3>
+            <p class="ep-muted ep-body">
+              from <strong style="color:var(--text-body);font-weight:var(--weight-medium);">@theo</strong>
+              · 9 members · private
+            </p>
+          </div>
+          <div class="ep-inv-card__foot">
+            <button class="ep-btn ep-btn--ghost">Decline</button>
+            <button class="ep-btn ep-btn--primary">Accept before it closes</button>
+          </div>
+        </article>
+
+        <!-- Expired -->
+        <article class="ep-inv-card" data-state="expired">
+          <div class="ep-inv-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l14 14M18 4L4 18"/></svg>
+          </div>
+          <div class="ep-inv-card__body">
+            <div class="ep-inv-card__head">
+              <span class="ep-eyebrow" style="color:var(--danger-hi);">Expired</span>
+              <time class="ep-mono ep-muted" datetime="2026-04-14T09:00Z">closed 7 days ago</time>
+            </div>
+            <h3 class="ep-headline ep-headline--sm" style="color:var(--text-muted);">Pickling club — founders</h3>
+            <p class="ep-muted ep-body">
+              from <strong style="color:var(--text-muted);">@ana</strong> · 17 members · private
+            </p>
+          </div>
+          <div class="ep-inv-card__foot">
+            <span class="ep-inv-card__expired-stamp">Expired</span>
+            <button class="ep-btn ep-btn--ghost" disabled>Decline</button>
+            <button class="ep-btn ep-btn--primary" disabled>Accept</button>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Empty state reference -->
+      <!--
+      <section class="ep-empty">
+        <div class="ep-empty__art" aria-hidden="true">&amp;</div>
+        <h2 class="ep-headline">Your inbox is quiet.</h2>
+        <p class="ep-body ep-muted">Every invitation you receive lands here until you act on it.</p>
+        <a class="ep-btn ep-btn--ghost" href="#">Browse public rooms →</a>
+      </section>
+      -->
+
+    </section>
+  </main>
+</div>
+
+</body>
+</html>
