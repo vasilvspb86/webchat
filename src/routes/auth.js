@@ -1,46 +1,59 @@
 import { Router } from 'express'
-import bcrypt from 'bcrypt'
 import { requireAuth } from '../middleware/auth.js'
+import * as authService from '../services/auth.js'
 
 const router = Router()
 
+const PERSISTENT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+
+function errorStatus(code) {
+  switch (code) {
+    case 'INVALID_EMAIL':
+    case 'INVALID_USERNAME':
+    case 'INVALID_PASSWORD':
+    case 'INVALID_INPUT':
+    case 'PASSWORD_MISMATCH':
+    case 'INVALID_TOKEN':
+      return 400
+    case 'INVALID_CREDENTIALS':
+      return 401
+    case 'EMAIL_TAKEN':
+    case 'USERNAME_TAKEN':
+      return 409
+    case 'NOT_FOUND':
+      return 404
+    default:
+      return 500
+  }
+}
+
+function sendError(res, err, next) {
+  if (err?.code && err.message) return res.status(errorStatus(err.code)).json({ error: err.message, code: err.code })
+  return next(err)
+}
+
+function setSession(req, user, persistent) {
+  req.session.userId = user.id
+  req.session.userAgent = req.headers['user-agent'] || 'Unknown'
+  req.session.ip = req.ip
+  req.session.createdAt = new Date().toISOString()
+  if (persistent) req.session.cookie.maxAge = PERSISTENT_MAX_AGE_MS
+}
+
 router.post('/register', async (req, res, next) => {
-  const { email, username, password } = req.body
-  if (!email || !username || !password) {
-    return res.status(400).json({ error: 'Email, username and password are required' })
-  }
   try {
-    const prisma = req.app.locals.prisma
-    const passwordHash = await bcrypt.hash(password, 12)
-    const user = await prisma.user.create({
-      data: { email: email.toLowerCase(), username, passwordHash },
-      select: { id: true, email: true, username: true },
-    })
-    req.session.userId = user.id
+    const user = await authService.register(req.app.locals.prisma, req.body)
+    setSession(req, user, false)
     res.status(201).json({ user })
-  } catch (err) {
-    if (err.code === 'P2002') {
-      const field = err.meta?.target?.includes('email') ? 'Email' : 'Username'
-      return res.status(409).json({ error: `${field} already taken` })
-    }
-    next(err)
-  }
+  } catch (err) { sendError(res, err, next) }
 })
 
 router.post('/login', async (req, res, next) => {
-  const { email, password, persistent } = req.body
   try {
-    const prisma = req.app.locals.prisma
-    const user = await prisma.user.findUnique({ where: { email: email?.toLowerCase() } })
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ error: 'Invalid email or password' })
-    }
-    req.session.userId = user.id
-    req.session.userAgent = req.headers['user-agent'] || 'Unknown'
-    req.session.ip = req.ip
-    if (persistent) req.session.cookie.maxAge = 24 * 60 * 60 * 1000
-    res.json({ user: { id: user.id, email: user.email, username: user.username } })
-  } catch (err) { next(err) }
+    const user = await authService.login(req.app.locals.prisma, req.body)
+    setSession(req, user, Boolean(req.body?.persistent))
+    res.json({ user })
+  } catch (err) { sendError(res, err, next) }
 })
 
 router.post('/logout', requireAuth, (req, res) => {
@@ -53,81 +66,81 @@ router.post('/logout', requireAuth, (req, res) => {
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const prisma = req.app.locals.prisma
-    const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
+    const user = await prisma.user.findFirst({
+      where: { id: req.session.userId, deletedAt: null },
       select: { id: true, email: true, username: true },
     })
-    if (!user) return res.status(401).json({ error: 'Session expired' })
+    if (!user) {
+      return req.session.destroy(() => res.status(401).json({ error: 'Session expired' }))
+    }
     res.json({ user })
   } catch (err) { next(err) }
 })
 
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    await authService.requestPasswordReset(req.app.locals.prisma, req.body)
+    res.json({ ok: true })
+  } catch (err) {
+    // Anti-enumeration: service returns silently for unknown emails; only surface validation errors.
+    if (err?.code === 'INVALID_EMAIL') return res.status(400).json({ error: err.message, code: err.code })
+    next(err)
+  }
+})
+
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    await authService.resetPassword(req.app.locals.prisma, req.body)
+    res.json({ ok: true })
+  } catch (err) { sendError(res, err, next) }
+})
+
+router.post('/change-password', requireAuth, async (req, res, next) => {
+  try {
+    await authService.changePassword(req.app.locals.prisma, {
+      userId: req.session.userId,
+      currentPassword: req.body?.currentPassword,
+      newPassword: req.body?.newPassword,
+      currentSid: req.sessionID,
+    })
+    res.json({ ok: true })
+  } catch (err) { sendError(res, err, next) }
+})
+
 router.get('/sessions', requireAuth, async (req, res, next) => {
   try {
-    const prisma = req.app.locals.prisma
-    const sessions = await prisma.user_sessions.findMany({
-      where: { expire: { gt: new Date() }, sess: { path: ['userId'], equals: req.session.userId } },
-      select: { sid: true, sess: true, expire: true },
+    const sessions = await authService.listSessions(req.app.locals.prisma, {
+      userId: req.session.userId,
+      currentSid: req.sessionID,
     })
-    res.json({
-      sessions: sessions.map(s => ({
-        sid: s.sid,
-        userAgent: s.sess.userAgent || 'Unknown',
-        ip: s.sess.ip || 'Unknown',
-        expire: s.expire,
-        isCurrent: s.sid === req.sessionID,
-      })),
-    })
+    res.json({ sessions })
   } catch (err) { next(err) }
 })
 
 router.delete('/sessions/:sid', requireAuth, async (req, res, next) => {
   try {
-    const prisma = req.app.locals.prisma
-    const session = await prisma.user_sessions.findUnique({ where: { sid: req.params.sid } })
-    if (!session || session.sess?.userId !== req.session.userId) {
-      return res.status(404).json({ error: 'Session not found' })
+    const isCurrent = req.params.sid === req.sessionID
+    await authService.revokeSession(req.app.locals.prisma, {
+      userId: req.session.userId, sid: req.params.sid,
+    })
+    if (isCurrent) {
+      return req.session.destroy(() => {
+        res.clearCookie('connect.sid')
+        res.json({ ok: true })
+      })
     }
-    await prisma.user_sessions.delete({ where: { sid: req.params.sid } })
     res.json({ ok: true })
-  } catch (err) { next(err) }
-})
-
-router.post('/reset-password', async (req, res, next) => {
-  const { email, currentPassword, newPassword } = req.body
-  try {
-    const prisma = req.app.locals.prisma
-    const user = await prisma.user.findUnique({ where: { email: email?.toLowerCase() } })
-    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      return res.status(401).json({ error: 'Invalid email or password' })
-    }
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(newPassword, 12) } })
-    res.json({ ok: true })
-  } catch (err) { next(err) }
-})
-
-router.post('/change-password', requireAuth, async (req, res, next) => {
-  const { currentPassword, newPassword } = req.body
-  try {
-    const prisma = req.app.locals.prisma
-    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      return res.status(401).json({ error: 'Current password is incorrect' })
-    }
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(newPassword, 12) } })
-    res.json({ ok: true })
-  } catch (err) { next(err) }
+  } catch (err) { sendError(res, err, next) }
 })
 
 router.delete('/account', requireAuth, async (req, res, next) => {
   try {
-    const prisma = req.app.locals.prisma
-    await prisma.room.deleteMany({ where: { ownerId: req.session.userId } })
-    await prisma.user.delete({ where: { id: req.session.userId } })
-    req.session.destroy()
-    res.clearCookie('connect.sid')
-    res.json({ ok: true })
-  } catch (err) { next(err) }
+    await authService.deleteAccount(req.app.locals.prisma, { userId: req.session.userId })
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid')
+      res.json({ ok: true })
+    })
+  } catch (err) { sendError(res, err, next) }
 })
 
 export default router

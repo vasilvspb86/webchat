@@ -20,6 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const prisma = new PrismaClient()
 const app = express()
+app.set('trust proxy', 1) // required for secure cookies behind TLS-terminating proxies
 const server = createServer(app)
 const io = new Server(server)
 
@@ -32,9 +33,14 @@ const sessionMiddleware = session({
     tableName: 'user_sessions',
   }),
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+  rolling: true,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax' },
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  },
 })
 
 app.use(sessionMiddleware)
