@@ -31,3 +31,23 @@ export function validateConfirmPassword(password, confirmPassword) {
   if (password !== confirmPassword) return 'Passwords do not match'
   return null
 }
+
+const ROOM_NAME_MIN = 3
+const ROOM_NAME_MAX = 50
+const ROOM_DESC_MAX = 500
+
+export function validateRoomName(name) {
+  if (!name || typeof name !== 'string') return 'Room name is required'
+  const trimmed = name.trim()
+  if (trimmed.length < ROOM_NAME_MIN || trimmed.length > ROOM_NAME_MAX) {
+    return `Room name must be ${ROOM_NAME_MIN}–${ROOM_NAME_MAX} characters`
+  }
+  return null
+}
+
+export function validateRoomDescription(description) {
+  if (description === undefined || description === null || description === '') return null
+  if (typeof description !== 'string') return 'Room description must be a string'
+  if (description.length > ROOM_DESC_MAX) return `Room description must be ${ROOM_DESC_MAX} characters or fewer`
+  return null
+}
