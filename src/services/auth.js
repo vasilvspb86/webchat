@@ -116,3 +116,35 @@ export async function revokeSession(prisma, { userId, sid }) {
   if (!row || row.sess?.userId !== userId) throw new AuthError('NOT_FOUND', 'Session not found')
   await prisma.user_sessions.delete({ where: { sid } })
 }
+
+export async function deleteAccount(prisma, { userId }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user || user.deletedAt) throw new AuthError('NOT_FOUND', 'User not found')
+
+  await prisma.$transaction(async (tx) => {
+    // Owned rooms — cascades RoomMember/Message/Attachment/RoomBan via schema
+    await tx.room.deleteMany({ where: { ownerId: userId } })
+    // Friendships (both directions) — explicit delete since relation is on `User`
+    await tx.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } })
+    // User bans (both directions)
+    await tx.userBan.deleteMany({ where: { OR: [{ bannerId: userId }, { bannedId: userId }] } })
+    // Notifications for this user (already cascades on User, but we're soft-deleting)
+    await tx.notification.deleteMany({ where: { userId } })
+    // Memberships in other rooms — user leaves
+    await tx.roomMember.deleteMany({ where: { userId } })
+    // Password reset tokens
+    await tx.passwordResetToken.deleteMany({ where: { userId } })
+    // Soft-delete the user + tombstone uniqueness fields
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: new Date(),
+        email: `deleted-${userId}-${user.email}`,
+        username: `deleted-${userId}-${user.username}`,
+        passwordHash: '!',
+      },
+    })
+    // Purge all session rows for this user
+    await tx.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ${userId}`
+  })
+}
