@@ -7,6 +7,7 @@ import {
 } from '../utils/validate.js'
 import { generateResetToken, hashToken } from '../utils/token.js'
 import { sendMail } from '../utils/mailer.js'
+import { emitRoomEvent } from '../socket/rooms.js'
 
 export class AuthError extends Error {
   constructor(code, message) { super(message); this.code = code }
@@ -117,9 +118,14 @@ export async function revokeSession(prisma, { userId, sid }) {
   await prisma.user_sessions.delete({ where: { sid } })
 }
 
-export async function deleteAccount(prisma, { userId }) {
+export async function deleteAccount(prisma, { userId }, { io } = {}) {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user || user.deletedAt) throw new AuthError('NOT_FOUND', 'User not found')
+
+  const ownedRoomIds = (await prisma.room.findMany({
+    where: { ownerId: userId },
+    select: { id: true },
+  })).map((r) => r.id)
 
   await prisma.$transaction(async (tx) => {
     // Owned rooms — cascades RoomMember/Message/Attachment/RoomBan via schema
@@ -147,4 +153,6 @@ export async function deleteAccount(prisma, { userId }) {
     // Purge all session rows for this user
     await tx.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ${userId}`
   })
+
+  for (const roomId of ownedRoomIds) emitRoomEvent(io, roomId, 'room_deleted', { roomId })
 }

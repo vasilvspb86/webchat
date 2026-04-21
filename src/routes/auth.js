@@ -135,7 +135,7 @@ router.delete('/sessions/:sid', requireAuth, async (req, res, next) => {
 
 router.delete('/account', requireAuth, async (req, res, next) => {
   try {
-    await authService.deleteAccount(req.app.locals.prisma, { userId: req.session.userId })
+    await authService.deleteAccount(req.app.locals.prisma, { userId: req.session.userId }, { io: req.app.locals.io })
     req.session.destroy(() => {
       res.clearCookie('connect.sid')
       res.json({ ok: true })
