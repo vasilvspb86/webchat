@@ -10,6 +10,10 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
       NODE_ENV: production
       PORT: 3000
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@webchat.local
+      APP_URL: http://localhost:3000
     volumes:
       - uploads:/app/uploads
     depends_on:
@@ -33,6 +37,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"   # Web UI
+    restart: unless-stopped
 
 volumes:
   uploads:
