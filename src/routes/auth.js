@@ -82,6 +82,7 @@ router.post('/forgot-password', async (req, res, next) => {
     await authService.requestPasswordReset(req.app.locals.prisma, req.body)
     res.json({ ok: true })
   } catch (err) {
+    // Anti-enumeration: service returns silently for unknown emails; only surface validation errors.
     if (err?.code === 'INVALID_EMAIL') return res.status(400).json({ error: err.message, code: err.code })
     next(err)
   }
