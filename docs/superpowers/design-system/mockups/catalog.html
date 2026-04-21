@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Catalog — Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    /* Mockup-local layout */
+    .catalog {
+      max-width: var(--content-wide);
+      margin: 0 auto;
+      padding: var(--space-12) var(--space-8) var(--space-13);
+      display: grid;
+      gap: var(--space-10);
+      position: relative;
+    }
+    .catalog__mast {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: var(--space-10);
+      align-items: end;
+    }
+    .catalog__title {
+      display: grid;
+      gap: var(--space-4);
+    }
+    .catalog__rule {
+      height: 2px;
+      width: 64px;
+      background: var(--accent-primary);
+      border-radius: 2px;
+      box-shadow: 0 0 16px var(--accent-primary-hi);
+    }
+    .catalog__lede {
+      max-width: 48ch;
+    }
+    .catalog__tools {
+      display: grid;
+      gap: var(--space-4);
+      justify-items: end;
+    }
+    .catalog__search {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+    }
+    .catalog__search svg {
+      position: absolute; left: var(--space-4); top: 50%;
+      transform: translateY(-50%); color: var(--text-faint);
+    }
+    .catalog__search input {
+      width: 100%;
+      height: var(--field-h-md);
+      padding: 0 var(--space-5) 0 var(--space-10);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) solid var(--edge-quiet);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      font: inherit;
+      outline: none;
+      transition: border-color var(--dur-quick), box-shadow var(--dur-quick);
+    }
+    .catalog__search input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 4px var(--accent-primary-veil); }
+
+    .catalog__strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: var(--space-5);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+    }
+    .catalog__strip .ep-eyebrow { color: var(--text-muted); }
+    .catalog__count { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text-muted); }
+
+    .catalog__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-7);
+    }
+
+    /* Pagination */
+    .catalog__page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      padding-top: var(--space-8);
+      border-top: var(--stroke-hair) solid var(--edge-whisper);
+      color: var(--text-muted);
+    }
+
+    /* Empty state swatch (off to the right) */
+    .swatch {
+      position: absolute;
+      right: var(--space-8);
+      top: var(--space-12);
+      transform: rotate(4deg);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Room card — demo variants */
+    .ep-room-card[data-visibility="private"] .ep-chip--private { display: inline-flex; }
+  </style>
+</head>
+<body>
+
+<div class="ep-app">
+
+  <!-- ─── top nav ──────────────────────────────────────────────────────── -->
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#" class="ep-is-active">Rooms</a>
+      <a href="#">Invitations <span class="ep-chip ep-chip--info" style="margin-left:6px;">2</span></a>
+      <a href="#">Friends</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <!-- ─── content ──────────────────────────────────────────────────────── -->
+  <main class="ep-app__main ep-layout-single">
+    <section class="catalog">
+
+      <div class="swatch">screen 01 · public catalog</div>
+
+      <header class="catalog__mast">
+        <div class="catalog__title">
+          <span class="ep-eyebrow">The parlour</span>
+          <h1 class="ep-display">Public <em>rooms</em>, lit and open.</h1>
+          <div class="catalog__rule"></div>
+          <p class="ep-body ep-body--lead ep-muted catalog__lede">
+            Pull up a chair. Every room here is visible to anyone signed in, newest first.
+            Private rooms live off this page, by invitation only.
+          </p>
+        </div>
+        <div class="catalog__tools">
+          <label class="catalog__search" aria-label="Search rooms">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
+            </svg>
+            <input type="search" placeholder="Search name or description…" value="">
+          </label>
+          <button class="ep-btn ep-btn--primary">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1v12M1 7h12"/></svg>
+            Create room
+          </button>
+        </div>
+      </header>
+
+      <div class="catalog__strip">
+        <span class="ep-eyebrow ep-eyebrow--quiet">47 rooms · newest first</span>
+        <span class="catalog__count">page 1 / 3</span>
+      </div>
+
+      <!-- ─── cards ──────────────────────────────────────────────────── -->
+      <div class="catalog__grid">
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">Coffee corner</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">Roasts, brews, slow hours before the day gets loud. Recipes welcome.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">142</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">Sunday long run</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">Weekly route planning for anyone pacing above 5 min/km. Share maps.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">38</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">Late desk</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">For the people working past midnight. Soft chatter, no pressure to reply.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">9</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">The Oulipo annex</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">Constraint-based writing. Monthly prompt, infinite arguments about the rules.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">24</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">Bus 51 commute</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">Delays, driver roster, and the dog that gets on at Clarendon. Local only.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">61</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+        <article class="ep-card ep-room-card">
+          <header class="ep-room-card__head">
+            <h3 class="ep-headline ep-headline--sm">Pickling club</h3>
+            <span class="ep-chip ep-chip--public">Public</span>
+          </header>
+          <p class="ep-body ep-body--clamp-3 ep-muted">Brine ratios, jar timelines, reckless experiments. Label everything.</p>
+          <footer class="ep-room-card__foot">
+            <span class="ep-meta"><span class="ep-mono">17</span><span class="ep-muted">members</span></span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Open</button>
+          </footer>
+        </article>
+
+      </div>
+
+      <nav class="catalog__page" aria-label="Pagination">
+        <button class="ep-btn ep-btn--ghost ep-btn--sm" disabled>← Newer</button>
+        <span class="ep-mono ep-muted">20 of 47</span>
+        <button class="ep-btn ep-btn--ghost ep-btn--sm">Older →</button>
+      </nav>
+
+    </section>
+  </main>
+
+</div>
+
+<!-- ─── STATES REFERENCE (not rendered in final page) ───────────────────
+     The states below would replace the grid in the matching condition.
+     ────────────────────────────────────────────────────────────────── -->
+
+<!--
+  Empty:        .ep-empty with headline "No rooms yet." + primary CTA.
+  Loading:      grid renders 8 skeleton cards (ep-room-card + .ep-is-skeleton
+                animates a shimmer across surface-raised → surface-floating).
+  Error:        .ep-empty with .ep-empty__art = '⟁', headline "Something
+                broke.", .ep-btn--ghost "Try again".
+-->
+
+</body>
+</html>

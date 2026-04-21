@@ -3,11 +3,25 @@
 <head>
   <meta charset="utf-8">
   <title>Webchat</title>
+  <link rel="stylesheet" href="/design-system/tokens.css">
+  <link rel="stylesheet" href="/design-system/components.css">
+  <link rel="stylesheet" href="/components/catalog.css">
+  <link rel="stylesheet" href="/components/create-room.css">
+  <link rel="stylesheet" href="/components/room-page.css">
+  <link rel="stylesheet" href="/components/admin-modal.css">
+  <link rel="stylesheet" href="/components/invitations.css">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
   <div id="app"></div>
   <script type="module" src="/app.js"></script>
+  <script type="module" src="/components/RoomCatalog.js"></script>
+  <script type="module" src="/components/CreateRoomModal.js"></script>
+  <script type="module" src="/components/RoomPage.js"></script>
+  <script type="module" src="/components/MembersPanel.js"></script>
+  <script type="module" src="/components/AdminModal.js"></script>
+  <script type="module" src="/components/InvitationInbox.js"></script>
 </body>
 </html>

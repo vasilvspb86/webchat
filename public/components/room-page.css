@@ -1,0 +1,199 @@
+/* Room page shell + members panel — screen-specific CSS.
+   Mirrors docs/superpowers/design-system/mockups/room-page.html
+   Reusable primitives live in /design-system/components.css. */
+
+/* ── Room header ──────────────────────────────────────────────────── */
+.room-header {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-10) var(--space-10) var(--space-7);
+  border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+  position: relative;
+}
+.room-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 180px;
+  background: radial-gradient(600px 180px at 20% 0%, var(--accent-primary-veil), transparent 70%);
+  pointer-events: none;
+}
+.room-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  position: relative;
+  z-index: 1;
+}
+.room-header__name { display: grid; gap: var(--space-3); min-width: 0; }
+
+.room-header__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.room-header__crumbs a { color: var(--text-muted); text-decoration: none; }
+.room-header__crumbs a:hover { color: var(--text-body); }
+.room-header__crumbs .sep { color: var(--text-faint); }
+
+.room-header__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.room-header__title h1 {
+  font-size: var(--text-3xl);
+  font-variation-settings: 'opsz' 72, 'SOFT' 40, 'WONK' 0;
+}
+
+.room-header__actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.room-header__desc {
+  max-width: 72ch;
+  position: relative;
+  z-index: 1;
+}
+
+.room-header__stats {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-4);
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+.room-header__stat { display: grid; gap: var(--space-1); }
+.room-header__stat-value {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-variation-settings: 'opsz' 36;
+  color: var(--text-primary);
+}
+.room-header__stat-label {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Stage (messages placeholder, owned by messaging sub-project) ── */
+.ep-stage {
+  position: relative;
+  padding: var(--space-10);
+  min-height: 540px;
+  display: grid;
+  gap: var(--space-5);
+}
+.ep-stage--empty {
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  color: var(--text-faint);
+}
+.ep-stage--empty .ep-empty__art {
+  font-size: 96px;
+  color: var(--ink-fog);
+  opacity: 0.5;
+  text-shadow: none;
+}
+.ep-stage__note {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  max-width: 48ch;
+  line-height: var(--leading-normal);
+}
+
+/* ── Members panel ────────────────────────────────────────────────── */
+.members { display: grid; gap: var(--space-5); }
+.members__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+}
+.members__head .ep-eyebrow { color: var(--text-muted); }
+
+.members__section { display: grid; gap: var(--space-1); }
+.members__section-title {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.members__list {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Row menu button — visible on hover for admins+. */
+.row-menu {
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity var(--dur-quick) var(--ease-standard), color var(--dur-quick) var(--ease-standard);
+}
+.ep-member-row:hover .row-menu,
+.ep-member-row:focus-within .row-menu {
+  color: var(--text-body);
+  opacity: 1;
+}
+.row-menu[disabled] { cursor: default; }
+
+/* ── Loading skeletons ───────────────────────────────────────────── */
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--bg-float) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm, 4px);
+  animation: ep-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-row {
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--bg-float) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: ep-skeleton-shimmer 1.6s ease-in-out infinite;
+  margin-bottom: var(--space-2);
+}
+@keyframes ep-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line, .skeleton-row { animation: none; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .room-header { padding: var(--space-7) var(--space-5) var(--space-5); }
+  .room-header__top { flex-direction: column; align-items: stretch; }
+  .room-header__actions { justify-content: flex-start; flex-wrap: wrap; }
+  .ep-stage { padding: var(--space-7) var(--space-5); min-height: 360px; }
+}

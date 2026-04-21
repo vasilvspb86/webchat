@@ -1,0 +1,451 @@
+/* ==========================================================================
+   Ember & Pitch — design tokens
+   --------------------------------------------------------------------------
+   A warm, campfire-at-night design system for conversational software.
+   Deep charcoal surfaces, paper-cream text, an ember-orange signal color,
+   gold for highlights, moss for presence. Serif display typography pairs
+   with a humanist geometric sans to make it feel like a place people *talk*,
+   not a dashboard.
+
+   Rules:
+     - This file is TOKENS ONLY — no component rules, no selectors beyond
+       :root / [data-theme] / @font-face.
+     - All sizes, spaces, colors, shadows, motion are addressable by name.
+     - Dark is primary. Light is a secondary skin reached via
+       [data-theme="light"] on :root or the nearest ancestor.
+     - The palette is intentionally broad so the auth pages can be re-skinned
+       using the same tokens later. Nothing here is rooms-specific.
+   ========================================================================== */
+
+
+/* ── Type ─────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Fraunces', 'Cambria', 'Georgia', serif;
+  --font-body:    'Plus Jakarta Sans', 'Inter Tight', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Fraunces axis defaults. Override inline for flourish: e.g. opsz 144, wonk 1. */
+  --font-display-settings: 'opsz' 72, 'SOFT' 50, 'WONK' 0;
+
+  /* Fluid type scale. Room for reading; headlines breathe. */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-xs:  0.75rem;   /* 12px */
+  --text-sm:  0.8125rem; /* 13px */
+  --text-md:  0.9375rem; /* 15px */
+  --text-lg:  1.0625rem; /* 17px */
+  --text-xl:  1.25rem;   /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: clamp(1.75rem, 1.2rem + 2vw, 2.25rem);
+  --text-4xl: clamp(2.25rem, 1.5rem + 3vw, 3rem);
+  --text-display: clamp(2.75rem, 1.8rem + 4vw, 4rem);
+
+  --leading-tight:  1.12;
+  --leading-snug:   1.3;
+  --leading-normal: 1.5;
+  --leading-loose:  1.7;
+
+  --tracking-tight:  -0.02em;
+  --tracking-body:   -0.005em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.12em;
+
+  --weight-light:    300;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+}
+
+
+/* ── Space ────────────────────────────────────────────────────────────────── */
+/* Near-Fibonacci — doubling feels cold, 2→3→5→8 feels breathed-in. */
+
+:root {
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  8px;
+  --space-4:  12px;
+  --space-5:  16px;
+  --space-6:  20px;
+  --space-7:  24px;
+  --space-8:  32px;
+  --space-9:  40px;
+  --space-10: 48px;
+  --space-11: 64px;
+  --space-12: 80px;
+  --space-13: 96px;
+  --space-14: 128px;
+}
+
+
+/* ── Radius ──────────────────────────────────────────────────────────────── */
+
+:root {
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;
+  --radius-2xl:  20px;
+  --radius-pill: 999px;
+  --radius-card: var(--radius-lg);
+  --radius-field: var(--radius-md);
+  --radius-modal: var(--radius-xl);
+}
+
+
+/* ── Borders & strokes ───────────────────────────────────────────────────── */
+
+:root {
+  --stroke-hair: 1px;
+  --stroke-thin: 1.5px;
+  --stroke-bold: 2px;
+  --stroke-emph: 3px;
+}
+
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+:root {
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-accel:    cubic-bezier(0.4, 0, 1, 1);
+  --ease-decel:    cubic-bezier(0, 0, 0.2, 1);
+  --ease-emphatic: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dur-flick:    80ms;
+  --dur-quick:    140ms;
+  --dur-smooth:   240ms;
+  --dur-slow:     380ms;
+  --dur-emphatic: 640ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-flick: 0ms;
+    --dur-quick: 0ms;
+    --dur-smooth: 0ms;
+    --dur-slow: 0ms;
+    --dur-emphatic: 0ms;
+  }
+}
+
+
+/* ── Layers / z-index ────────────────────────────────────────────────────── */
+
+:root {
+  --z-base:      0;
+  --z-elevated:  10;
+  --z-sticky:    40;
+  --z-drawer:    80;
+  --z-modal:    120;
+  --z-toast:    160;
+  --z-tooltip:  200;
+}
+
+
+/* ==========================================================================
+   COLOR — DARK (primary)
+   --------------------------------------------------------------------------
+   Naming: the system reads like a woodcut etching. "Ink" = dark, "Paper" =
+   light, "Ember" = primary signal, "Gold" = highlight, "Moss" = presence,
+   "Rust" = danger, "Tide" = cool info. "Fog"/"Smoke" map to opacity
+   gradations where transparency would complicate the pipeline.
+   ========================================================================== */
+
+:root, :root[data-theme="dark"] {
+
+  /* Raw palette — warm blacks so the surfaces feel charcoal, not gunmetal */
+  --ink-void:   #0b0908;
+  --ink-pitch:  #100d0b;
+  --ink-char:   #171311;
+  --ink-smoke:  #211c19;
+  --ink-ember:  #2b2421;   /* elevated surface 2 */
+  --ink-ash:    #3a302a;   /* divider high */
+  --ink-soot:   #4a3f39;
+  --ink-fog:    #6e5f57;   /* muted text on dark */
+
+  --paper-bone:  #f4ecdb;
+  --paper-cream: #e7d9c3;
+  --paper-linen: #d4c5ab;
+  --paper-dust:  #a89a86;
+
+  /* Signal: ember orange, warm and urgent without being alarming */
+  --ember-deep:  #a63912;
+  --ember-core:  #e55525;   /* primary accent */
+  --ember-glow:  #ff7a43;   /* hover lift */
+  --ember-spark: #ffb688;   /* soft tint for backgrounds */
+
+  /* Highlights: gold for admin/owner/featured */
+  --gold-deep:   #b8862a;
+  --gold-core:   #e2a84e;
+  --gold-glow:   #f5c87c;
+  --gold-dust:   #3b2e14;   /* translucent gold on dark background */
+
+  /* Presence: moss green for online */
+  --moss-deep:   #3d6b4c;
+  --moss-core:   #5d9672;
+  --moss-glow:   #84b998;
+
+  /* Danger: rust — warm not clinical */
+  --rust-deep:   #8f3524;
+  --rust-core:   #c45a3c;
+  --rust-glow:   #dd826b;
+
+  /* Info / invitation accent: muted cool to balance all the warm */
+  --tide-deep:   #2f4d58;
+  --tide-core:   #6b8e9d;
+  --tide-glow:   #9fbcc7;
+
+  /* -----------------------------------------------------------------
+     Semantic layer — what components actually reach for
+     ----------------------------------------------------------------- */
+
+  --bg-canvas:   var(--ink-void);
+  --bg-base:     var(--ink-pitch);
+  --bg-raised:   var(--ink-char);
+  --bg-float:    var(--ink-smoke);
+  --bg-lifted:   var(--ink-ember);
+  --bg-overlay:  rgba(5, 3, 2, 0.68);
+
+  --surface-sunken:   var(--ink-void);
+  --surface-flat:     var(--ink-char);
+  --surface-raised:   var(--ink-smoke);
+  --surface-floating: var(--ink-ember);
+  --surface-card:     var(--ink-char);
+
+  --edge-whisper: color-mix(in oklab, var(--ink-ash) 60%, transparent);
+  --edge-quiet:   var(--ink-ash);
+  --edge-default: var(--ink-soot);
+  --edge-loud:    var(--ink-fog);
+
+  --text-primary:   var(--paper-bone);
+  --text-body:      var(--paper-cream);
+  --text-secondary: var(--paper-linen);
+  --text-muted:     var(--paper-dust);
+  --text-faint:     var(--ink-fog);
+  --text-inverse:   var(--ink-void);
+  --text-on-accent: #1b0d06;     /* readable on ember-core */
+
+  --accent-primary:     var(--ember-core);
+  --accent-primary-hi:  var(--ember-glow);
+  --accent-primary-lo:  var(--ember-deep);
+  --accent-primary-veil: color-mix(in oklab, var(--ember-core) 18%, transparent);
+
+  --accent-gold:        var(--gold-core);
+  --accent-gold-hi:     var(--gold-glow);
+  --accent-gold-lo:     var(--gold-deep);
+  --accent-gold-veil:   color-mix(in oklab, var(--gold-core) 18%, transparent);
+
+  --status-online:      var(--moss-core);
+  --status-online-glow: var(--moss-glow);
+  --status-away:        var(--gold-core);
+  --status-offline:     var(--ink-fog);
+  --status-do-not-disturb: var(--rust-core);
+
+  --danger:             var(--rust-core);
+  --danger-hi:          var(--rust-glow);
+  --danger-lo:          var(--rust-deep);
+  --danger-veil:        color-mix(in oklab, var(--rust-core) 20%, transparent);
+
+  --info:               var(--tide-core);
+  --info-hi:            var(--tide-glow);
+  --info-veil:          color-mix(in oklab, var(--tide-core) 18%, transparent);
+
+  /* Focus ring — bright enough to survive on every surface */
+  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--ember-glow);
+
+  /* Selection */
+  --selection-bg: color-mix(in oklab, var(--ember-core) 40%, transparent);
+  --selection-fg: var(--paper-bone);
+
+  /* -----------------------------------------------------------------
+     Shadows — warm, never cold black. Built from ember-deep.
+     ----------------------------------------------------------------- */
+
+  --shadow-xs: 0 1px 0 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 196, 140, 0.02) inset;
+  --shadow-md:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 8px 20px -6px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 196, 140, 0.03) inset;
+  --shadow-lg:
+    0 6px 14px rgba(0, 0, 0, 0.55),
+    0 24px 48px -12px rgba(0, 0, 0, 0.7),
+    0 1px 0 rgba(255, 196, 140, 0.04) inset;
+  --shadow-xl:
+    0 20px 48px rgba(0, 0, 0, 0.7),
+    0 1px 0 rgba(255, 196, 140, 0.06) inset;
+
+  --shadow-ember-soft:   0 0 0 1px var(--ember-deep), 0 0 16px -2px var(--accent-primary-veil);
+  --shadow-ember-strong: 0 0 0 1px var(--ember-core), 0 0 32px -4px var(--ember-glow);
+  --shadow-gold-soft:    0 0 0 1px var(--gold-deep), 0 0 16px -2px var(--accent-gold-veil);
+
+  /* -----------------------------------------------------------------
+     Atmospheric backgrounds — optional richer surface fills.
+     Use these where a raised surface would feel dead.
+     ----------------------------------------------------------------- */
+
+  --atmosphere-warm:
+    radial-gradient(1200px 600px at 10% -10%, rgba(229, 85, 37, 0.09), transparent 60%),
+    radial-gradient(800px 400px at 90% 110%, rgba(226, 168, 78, 0.06), transparent 70%),
+    var(--bg-canvas);
+
+  --atmosphere-quiet:
+    radial-gradient(1000px 500px at 50% -20%, rgba(107, 142, 157, 0.06), transparent 70%),
+    var(--bg-canvas);
+
+  --noise-layer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.94  0 0 0 0 0.82  0 0 0 0.04 0'/></filter><rect width='80' height='80' filter='url(%23n)'/></svg>");
+
+  /* Role-color pairs for chips/badges — foreground, background, border */
+  --chip-owner-fg:    var(--gold-glow);
+  --chip-owner-bg:    color-mix(in oklab, var(--gold-core) 16%, transparent);
+  --chip-owner-bd:    color-mix(in oklab, var(--gold-core) 40%, transparent);
+
+  --chip-admin-fg:    var(--ember-glow);
+  --chip-admin-bg:    color-mix(in oklab, var(--ember-core) 14%, transparent);
+  --chip-admin-bd:    color-mix(in oklab, var(--ember-core) 36%, transparent);
+
+  --chip-member-fg:   var(--paper-linen);
+  --chip-member-bg:   color-mix(in oklab, var(--paper-linen) 8%, transparent);
+  --chip-member-bd:   color-mix(in oklab, var(--paper-linen) 20%, transparent);
+
+  --chip-private-fg:  var(--tide-glow);
+  --chip-private-bg:  color-mix(in oklab, var(--tide-core) 14%, transparent);
+  --chip-private-bd:  color-mix(in oklab, var(--tide-core) 36%, transparent);
+
+  --chip-banned-fg:   var(--rust-glow);
+  --chip-banned-bg:   color-mix(in oklab, var(--rust-core) 14%, transparent);
+  --chip-banned-bd:   color-mix(in oklab, var(--rust-core) 36%, transparent);
+}
+
+
+/* ==========================================================================
+   COLOR — LIGHT (optional, reached via [data-theme="light"])
+   --------------------------------------------------------------------------
+   A warm paper daylight skin. Backgrounds pull from linen/bone; ember and
+   gold stay saturated. Not the primary look — included so tokens are broad
+   enough for later re-skin passes.
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  --bg-canvas:  #f3ead7;
+  --bg-base:    #f7efe0;
+  --bg-raised:  #fcf6e9;
+  --bg-float:   #ffffff;
+  --bg-lifted:  #ffffff;
+  --bg-overlay: rgba(40, 26, 18, 0.42);
+
+  --surface-sunken:   #e9dec7;
+  --surface-flat:     #fcf6e9;
+  --surface-raised:   #ffffff;
+  --surface-floating: #ffffff;
+  --surface-card:     #fcf6e9;
+
+  --edge-whisper: rgba(57, 42, 33, 0.08);
+  --edge-quiet:   rgba(57, 42, 33, 0.14);
+  --edge-default: rgba(57, 42, 33, 0.22);
+  --edge-loud:    rgba(57, 42, 33, 0.38);
+
+  --text-primary:   #201612;
+  --text-body:      #2f2218;
+  --text-secondary: #443326;
+  --text-muted:     #6c5847;
+  --text-faint:     #907c69;
+  --text-inverse:   #fcf6e9;
+  --text-on-accent: #fcf6e9;
+
+  --accent-primary:     #cf4514;
+  --accent-primary-hi:  #e0531f;
+  --accent-primary-lo:  #9a3109;
+  --accent-primary-veil: rgba(207, 69, 20, 0.1);
+
+  --accent-gold:        #a4761f;
+  --accent-gold-hi:     #c6912f;
+  --accent-gold-lo:     #7a5411;
+  --accent-gold-veil:   rgba(164, 118, 31, 0.1);
+
+  --status-online:      #3c7556;
+  --status-online-glow: #58a37c;
+  --status-away:        #a4761f;
+  --status-offline:     #907c69;
+  --status-do-not-disturb: #a13924;
+
+  --danger:             #a13924;
+  --danger-hi:          #bf4e37;
+  --danger-lo:          #6e2514;
+  --danger-veil:        rgba(161, 57, 36, 0.1);
+
+  --info:               #3e6272;
+  --info-hi:            #567e8f;
+  --info-veil:          rgba(62, 98, 114, 0.1);
+
+  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--accent-primary-hi);
+
+  --selection-bg: rgba(207, 69, 20, 0.22);
+  --selection-fg: #201612;
+
+  --shadow-xs: 0 1px 0 rgba(57, 42, 33, 0.06);
+  --shadow-sm: 0 1px 2px rgba(57, 42, 33, 0.08), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  --shadow-md: 0 4px 10px -2px rgba(57, 42, 33, 0.12), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  --shadow-lg: 0 12px 24px -6px rgba(57, 42, 33, 0.18), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  --shadow-xl: 0 24px 48px -10px rgba(57, 42, 33, 0.25), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+
+  --shadow-ember-soft:   0 0 0 1px var(--accent-primary-lo), 0 0 16px -2px var(--accent-primary-veil);
+  --shadow-ember-strong: 0 0 0 1px var(--accent-primary), 0 0 28px -6px var(--accent-primary-hi);
+  --shadow-gold-soft:    0 0 0 1px var(--accent-gold-lo), 0 0 16px -2px var(--accent-gold-veil);
+
+  --atmosphere-warm:
+    radial-gradient(1000px 500px at 10% -5%, rgba(207, 69, 20, 0.08), transparent 65%),
+    radial-gradient(700px 350px at 95% 105%, rgba(164, 118, 31, 0.06), transparent 70%),
+    var(--bg-canvas);
+
+  --chip-owner-fg:    #7a5411;
+  --chip-owner-bg:    rgba(164, 118, 31, 0.14);
+  --chip-owner-bd:    rgba(164, 118, 31, 0.4);
+
+  --chip-admin-fg:    #9a3109;
+  --chip-admin-bg:    rgba(207, 69, 20, 0.1);
+  --chip-admin-bd:    rgba(207, 69, 20, 0.35);
+
+  --chip-member-fg:   #443326;
+  --chip-member-bg:   rgba(57, 42, 33, 0.06);
+  --chip-member-bd:   rgba(57, 42, 33, 0.14);
+
+  --chip-private-fg:  #3e6272;
+  --chip-private-bg:  rgba(62, 98, 114, 0.1);
+  --chip-private-bd:  rgba(62, 98, 114, 0.32);
+
+  --chip-banned-fg:   #6e2514;
+  --chip-banned-bg:   rgba(161, 57, 36, 0.1);
+  --chip-banned-bd:   rgba(161, 57, 36, 0.32);
+}
+
+
+/* ── Sizing helpers (layout scales) ───────────────────────────────────────── */
+
+:root {
+  --content-min:   320px;
+  --content-narrow: 620px;
+  --content-reading: 760px;
+  --content-wide:    1120px;
+  --content-vast:    1440px;
+
+  --nav-h:       56px;
+  --sidebar-w:   272px;
+  --panel-w:     288px;
+  --modal-sm:    440px;
+  --modal-md:    620px;
+  --modal-lg:    820px;
+
+  --field-h-sm:  32px;
+  --field-h-md:  40px;
+  --field-h-lg:  48px;
+}

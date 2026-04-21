@@ -1,0 +1,21 @@
+/* Create-Room modal — screen-specific styles (Task 16) */
+
+.ep-modal.ep-modal--create { width: min(100%, 560px); }
+
+.create-form { display: grid; gap: var(--space-7); }
+
+/* Top-of-form error banner (maps to errors._form) */
+.create-form__form-error {
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-veil);
+  border: var(--stroke-hair) solid var(--danger);
+  border-radius: var(--radius-md);
+  color: var(--danger-hi);
+  font-size: var(--text-sm);
+}
+
+/* "You'll become the first member and only admin." hint in footer */
+.create-form__foot-hint {
+  margin-right: auto;
+  font-size: var(--text-xs);
+}

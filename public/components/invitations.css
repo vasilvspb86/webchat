@@ -1,0 +1,151 @@
+/* Task 19 — Invitation Inbox screen-specific styles.
+   Mirrors docs/superpowers/design-system/mockups/invitations.html.
+   Reusable primitives (ep-eyebrow, ep-btn, ep-headline, etc.) live in
+   /design-system/components.css — don't redeclare them here. */
+
+.inbox {
+  max-width: var(--content-reading);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-8);
+  display: grid;
+  gap: var(--space-9);
+}
+.inbox__mast { display: grid; gap: var(--space-4); }
+.inbox__rule {
+  height: 2px;
+  width: 64px;
+  background: var(--info);
+  border-radius: 2px;
+  box-shadow: 0 0 16px var(--info-hi);
+}
+.inbox__lede { max-width: 52ch; }
+.inbox__list { display: grid; gap: var(--space-5); }
+
+/* ── Invitation card ─────────────────────────────── */
+.ep-inv-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-6);
+  align-items: center;
+  padding: var(--space-6) var(--space-7);
+  background: var(--surface-card);
+  border: var(--stroke-hair) solid var(--edge-quiet);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--dur-quick),
+              box-shadow var(--dur-quick),
+              transform var(--dur-quick);
+}
+.ep-inv-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--info) 0%, transparent 45%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  opacity: 0.7;
+}
+.ep-inv-card:hover {
+  border-color: var(--edge-default);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.ep-inv-card__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--info-veil);
+  color: var(--info-hi);
+  border: var(--stroke-hair) solid color-mix(in oklab, var(--info) 40%, transparent);
+}
+
+.ep-inv-card__body { display: grid; gap: var(--space-2); min-width: 0; }
+.ep-inv-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+.ep-inv-card__foot {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.ep-inv-card__from {
+  color: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+/* ── Expiring state ──────────────────────────────── */
+.ep-inv-card[data-state="expiring"]::before {
+  background: linear-gradient(90deg, var(--accent-gold) 0%, transparent 50%);
+}
+.ep-inv-card[data-state="expiring"] .ep-inv-card__icon {
+  background: var(--accent-gold-veil);
+  color: var(--accent-gold-hi);
+  border-color: color-mix(in oklab, var(--accent-gold) 50%, transparent);
+}
+.ep-inv-card[data-state="expiring"] time { color: var(--accent-gold-hi); }
+
+/* ── Expired state ───────────────────────────────── */
+.ep-inv-card[data-state="expired"] { opacity: 0.65; }
+.ep-inv-card[data-state="expired"]::before {
+  background: linear-gradient(90deg, var(--danger) 0%, transparent 45%);
+  opacity: 0.4;
+}
+.ep-inv-card[data-state="expired"] .ep-inv-card__icon {
+  background: var(--danger-veil);
+  color: var(--danger-hi);
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+}
+.ep-inv-card[data-state="expired"] .ep-btn {
+  pointer-events: none;
+  opacity: 0.4;
+}
+.ep-inv-card[data-state="expired"] .ep-inv-card__headline,
+.ep-inv-card[data-state="expired"] .ep-inv-card__from {
+  color: var(--text-muted);
+}
+.ep-inv-card__expired-eyebrow { color: var(--danger-hi); }
+
+.ep-inv-card__expired-stamp {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--danger-hi);
+  border: var(--stroke-thin) solid var(--danger);
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-sm);
+  transform: rotate(-4deg);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+/* ── Skeletons ───────────────────────────────────── */
+.ep-inv-card.ep-is-skeleton { pointer-events: none; }
+.ep-inv-card.ep-is-skeleton .ep-inv-card__icon,
+.ep-inv-card.ep-is-skeleton .ep-inv-card__head span,
+.ep-inv-card.ep-is-skeleton .ep-inv-card__head time,
+.ep-inv-card.ep-is-skeleton h3,
+.ep-inv-card.ep-is-skeleton p,
+.ep-inv-card.ep-is-skeleton .ep-inv-card__foot {
+  background: color-mix(in oklab, var(--edge-quiet) 60%, transparent);
+  color: transparent !important;
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  min-height: 1em;
+  animation: ep-inv-pulse 1.4s ease-in-out infinite;
+}
+.ep-inv-card.ep-is-skeleton .ep-inv-card__icon { animation-delay: 0s; }
+.ep-inv-card.ep-is-skeleton h3 { height: 1.1em; width: 60%; }
+.ep-inv-card.ep-is-skeleton p { height: 1em; width: 80%; }
+.ep-inv-card.ep-is-skeleton .ep-inv-card__foot { height: 32px; width: 180px; }
+@keyframes ep-inv-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 0.25; }
+}
