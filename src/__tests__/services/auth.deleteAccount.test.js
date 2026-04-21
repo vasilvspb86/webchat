@@ -11,9 +11,9 @@ describe('deleteAccount', () => {
     userId = (await register(testPrisma, creds)).id
     friendId = (await register(testPrisma, { ...creds, email: 'b@b.c', username: 'bob' })).id
     // seed: own room + friend room where user is a message-sender
-    const ownRoom = await testPrisma.room.create({ data: { name: 'alices-room', ownerId: userId } })
+    const ownRoom = await testPrisma.room.create({ data: { name: 'alices-room', nameNormalized: 'alices-room', ownerId: userId } })
     await testPrisma.roomMember.create({ data: { userId, roomId: ownRoom.id, isAdmin: true } })
-    const bobRoom = await testPrisma.room.create({ data: { name: 'bobs-room', ownerId: friendId } })
+    const bobRoom = await testPrisma.room.create({ data: { name: 'bobs-room', nameNormalized: 'bobs-room', ownerId: friendId } })
     await testPrisma.roomMember.createMany({ data: [
       { userId: friendId, roomId: bobRoom.id, isAdmin: true },
       { userId, roomId: bobRoom.id },

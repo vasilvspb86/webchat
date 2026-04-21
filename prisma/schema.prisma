@@ -39,12 +39,14 @@ model user_sessions {
 }
 
 model Room {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  isPublic    Boolean  @default(true)
-  ownerId     String
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  name           String
+  nameNormalized String   @unique
+  description    String?
+  isPublic       Boolean  @default(true)
+  ownerId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   owner    User         @relation(fields: [ownerId], references: [id])
   members  RoomMember[]
