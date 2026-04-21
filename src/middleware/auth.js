@@ -7,9 +7,7 @@ export function requireAuth(req, res, next) {
 
 export function requireSocketAuth(socket, next) {
   const userId = socket.request.session?.userId
-  if (!userId) {
-    return next(new Error('Not authenticated'))
-  }
+  if (!userId) return next(new Error('Not authenticated'))
   socket.userId = userId
   next()
 }

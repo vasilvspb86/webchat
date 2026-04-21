@@ -32,9 +32,14 @@ const sessionMiddleware = session({
     tableName: 'user_sessions',
   }),
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+  rolling: true,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax' },
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  },
 })
 
 app.use(sessionMiddleware)
