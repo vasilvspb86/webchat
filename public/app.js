@@ -46,7 +46,10 @@ createApp({
       try { me.value = (await api('POST', '/api/auth/login', loginForm.value)).user; go('/profile') }
       catch (e) { setFlash(e.message) }
     }
-    const doLogout = async () => { await api('POST', '/api/auth/logout'); me.value = null; go('/login') }
+    const doLogout = async () => {
+      try { await api('POST', '/api/auth/logout'); me.value = null; go('/login') }
+      catch (e) { setFlash(e.message) }
+    }
     const doForgot = async () => {
       try { await api('POST', '/api/auth/forgot-password', forgotForm.value); setFlash('If that email exists, a reset link has been sent.') }
       catch (e) { setFlash(e.message) }
@@ -62,13 +65,16 @@ createApp({
     }
     const loadSessions = async () => { sessions.value = (await api('GET', '/api/auth/sessions')).sessions }
     const revoke = async (sid) => {
-      await api('DELETE', `/api/auth/sessions/${sid}`)
-      const s = sessions.value.find(s => s.sid === sid)
-      if (s?.isCurrent) { me.value = null; go('/login') } else { await loadSessions() }
+      try {
+        await api('DELETE', `/api/auth/sessions/${sid}`)
+        const s = sessions.value.find(s => s.sid === sid)
+        if (s?.isCurrent) { me.value = null; go('/login') } else { await loadSessions() }
+      } catch (e) { setFlash(e.message) }
     }
     const doDelete = async () => {
       if (!confirm('Delete your account? Your owned rooms and their messages will be permanently erased. This cannot be undone.')) return
-      await api('DELETE', '/api/auth/account'); me.value = null; go('/login')
+      try { await api('DELETE', '/api/auth/account'); me.value = null; go('/login') }
+      catch (e) { setFlash(e.message) }
     }
 
     const view = computed(() => {
@@ -90,7 +96,7 @@ createApp({
   },
   template: `
     <div class="auth-wrap">
-      <div v-if="flash" class="flash">{{ flash }}</div>
+      <div v-if="flash" class="flash" role="status" aria-live="polite">{{ flash }}</div>
 
       <section v-if="view==='login'" class="card">
         <h1>Sign in</h1>
