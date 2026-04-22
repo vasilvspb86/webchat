@@ -127,4 +127,32 @@ router.post('/:id/invitations', async (req, res, next) => {
   } catch (err) { sendError(res, err, next) }
 })
 
+router.get('/:id/invitations', async (req, res, next) => {
+  try {
+    // Privacy precedence for private rooms: hide from non-members as 404.
+    const room = await req.app.locals.prisma.room.findUnique({ where: { id: req.params.id } })
+    if (!room) return res.status(404).json({ error: 'Not found' })
+    if (!room.isPublic) {
+      const m = await req.app.locals.prisma.roomMember.findUnique({
+        where: { userId_roomId: { userId: req.session.userId, roomId: req.params.id } },
+      })
+      if (!m) return res.status(404).json({ error: 'Not found' })
+    }
+    const invitations = await membership.listPendingInvitations(
+      req.app.locals.prisma, req.session.userId, req.params.id,
+    )
+    res.json({ invitations })
+  } catch (err) { sendError(res, err, next) }
+})
+
+router.delete('/:id/invitations/:notificationId', async (req, res, next) => {
+  try {
+    await membership.revokeInvitation(
+      req.app.locals.prisma, req.app.locals.io,
+      req.session.userId, req.params.id, req.params.notificationId,
+    )
+    res.status(204).end()
+  } catch (err) { sendError(res, err, next) }
+})
+
 export default router
