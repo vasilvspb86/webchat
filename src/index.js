@@ -9,7 +9,6 @@ import connectPgSimple from 'connect-pg-simple'
 import { PrismaClient } from '@prisma/client'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
-import messagesRouter from './routes/messages.js'
 import filesRouter from './routes/files.js'
 import usersRouter from './routes/users.js'
 import notificationsRouter from './routes/notifications.js'
@@ -54,7 +53,6 @@ app.locals.io = io
 
 app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
-app.use('/api/messages', messagesRouter)
 app.use('/api/files', filesRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/notifications', notificationsRouter)
