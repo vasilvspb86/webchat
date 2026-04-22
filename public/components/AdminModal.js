@@ -13,7 +13,8 @@ const TABS = [
   { id: 'members',     label: 'Members',     hasCount: true  },
   { id: 'admins',      label: 'Admins',      hasCount: true  },
   { id: 'banned',      label: 'Banned',      hasCount: true  },
-  { id: 'invitations', label: 'Invitations', hasCount: true  },
+  { id: 'invitations', label: 'Invite',      hasCount: false },
+  { id: 'pending',     label: 'Pending',     hasCount: true  },
   { id: 'settings',    label: 'Settings',    hasCount: false },
 ]
 
@@ -28,7 +29,7 @@ app.component('admin-modal', {
     const room = ref(null)
 
     // Counts shown on tab labels; each tab emits 'count' once it has fetched its list.
-    const counts = reactive({ members: null, admins: null, banned: null, invitations: null })
+    const counts = reactive({ members: null, admins: null, banned: null, pending: null })
     const onTabCount = (tab, n) => { counts[tab] = n }
 
     const loadRoom = async () => {
@@ -118,8 +119,14 @@ app.component('admin-modal', {
             :room-id="roomId"
             :role="role"
             :room="room"
-            @count="onTabCount('invitations', $event)"
           ></invitations-tab>
+          <pending-invitations-tab
+            v-else-if="activeTab === 'pending'"
+            :room-id="roomId"
+            :role="role"
+            :room="room"
+            @count="onTabCount('pending', $event)"
+          ></pending-invitations-tab>
           <settings-tab
             v-else-if="activeTab === 'settings'"
             :room-id="roomId"

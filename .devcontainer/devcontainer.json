@@ -1,0 +1,23 @@
+{
+  "name": "webchat",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/itsmechlark/features/postgresql:1": { "version": "16" }
+  },
+  "forwardPorts": [3000, 5432],
+  "portsAttributes": {
+    "3000": { "label": "webchat", "onAutoForward": "openPreview" },
+    "5432": { "label": "postgres", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "Prisma.prisma",
+        "Vue.volar"
+      ]
+    }
+  },
+  "remoteUser": "node"
+}

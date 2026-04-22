@@ -1,54 +1,36 @@
-const HEARTBEAT_TIMEOUT_MS = 15_000
-const heartbeatTimers = new Map()
+const connections = new Map()  // userId -> Set<socketId>
 
-function broadcastPresence(io, userId, status) {
-  io.emit('presence_update', { userId, status })
-}
+export function _reset() { connections.clear() }
 
-export function onConnect(io, presence, socket) {
-  const { userId } = socket
-  if (!presence.has(userId)) {
-    presence.set(userId, { status: 'online', sockets: new Set(), lastSeen: new Date() })
-  }
-  const entry = presence.get(userId)
-  entry.sockets.add(socket.id)
-  entry.status = 'online'
-  entry.lastSeen = new Date()
-  broadcastPresence(io, userId, 'online')
-  scheduleHeartbeatTimeout(io, presence, socket)
-}
-
-export function onHeartbeat(presence, socket) {
-  const entry = presence.get(socket.userId)
-  if (entry) entry.lastSeen = new Date()
-  clearTimeout(heartbeatTimers.get(socket.id))
-}
-
-export function onAfk(io, presence, socket, idle) {
-  const { userId } = socket
-  const entry = presence.get(userId)
-  if (!entry) return
-  const newStatus = idle ? 'afk' : 'online'
-  if (entry.status !== newStatus) {
-    entry.status = newStatus
-    broadcastPresence(io, userId, newStatus)
+async function broadcastToUserRooms(io, userId, prisma, status) {
+  const rooms = await prisma.roomMember.findMany({
+    where: { userId },
+    select: { roomId: true },
+  })
+  for (const r of rooms) {
+    io.to(`room:${r.roomId}`).emit('presence_update', { userId, status })
   }
 }
 
-export function onDisconnect(io, presence, socket) {
+export async function onConnect(io, socket, prisma) {
   const { userId } = socket
-  const entry = presence.get(userId)
-  if (!entry) return
-  clearTimeout(heartbeatTimers.get(socket.id))
-  heartbeatTimers.delete(socket.id)
-  entry.sockets.delete(socket.id)
-  if (entry.sockets.size === 0) {
-    broadcastPresence(io, userId, 'offline')
-    presence.delete(userId)
+  let set = connections.get(userId)
+  if (!set) {
+    set = new Set()
+    connections.set(userId, set)
   }
+  const wasEmpty = set.size === 0
+  set.add(socket.id)
+  if (wasEmpty) await broadcastToUserRooms(io, userId, prisma, 'online')
 }
 
-function scheduleHeartbeatTimeout(io, presence, socket) {
-  clearTimeout(heartbeatTimers.get(socket.id))
-  heartbeatTimers.set(socket.id, setTimeout(() => onDisconnect(io, presence, socket), HEARTBEAT_TIMEOUT_MS))
+export async function onDisconnect(io, socket, prisma) {
+  const { userId } = socket
+  const set = connections.get(userId)
+  if (!set) return
+  set.delete(socket.id)
+  if (set.size === 0) {
+    connections.delete(userId)
+    await broadcastToUserRooms(io, userId, prisma, 'offline')
+  }
 }

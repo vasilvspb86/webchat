@@ -119,6 +119,7 @@ export const app = createApp({
       if (p === '/reset') return 'reset'
       if (!me.value) return 'login'
       if (h.startsWith('/rooms/new')) return 'rooms-new'
+      if (h === '/rooms/mine') return 'my-rooms'
       if (h.startsWith('/rooms/')) return 'rooms-page'
       if (h === '/rooms') return 'rooms-catalog'
       if (h === '/invitations') return 'invitations'
@@ -141,11 +142,12 @@ export const app = createApp({
       doRegister, doLogin, doLogout, doForgot, doReset, doChange, revoke, doDelete, go: navigate }
   },
   template: `
-    <div :class="['ep-app-root', view.startsWith('rooms-') || view==='invitations' ? 'is-rooms' : 'is-auth']">
+    <div :class="['ep-app-root', view.startsWith('rooms-') || view==='my-rooms' || view==='invitations' ? 'is-rooms' : 'is-auth']">
       <div v-if="flash" class="flash" role="status" aria-live="polite">{{ flash }}</div>
 
       <!-- Rooms sub-project views (components registered by Task 15-19 subagents) -->
       <room-catalog v-if="view==='rooms-catalog' || view==='rooms-new'" :show-create="view==='rooms-new'" @navigate="go"></room-catalog>
+      <my-rooms-page v-else-if="view==='my-rooms'" :me="me" @navigate="go"></my-rooms-page>
       <room-page v-else-if="view==='rooms-page'" :room-id="currentRoomId" @navigate="go"></room-page>
       <invitation-inbox v-else-if="view==='invitations'" @navigate="go"></invitation-inbox>
 

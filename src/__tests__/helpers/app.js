@@ -4,6 +4,7 @@ import connectPgSimple from 'connect-pg-simple'
 import authRouter from '../../routes/auth.js'
 import roomsRouter from '../../routes/rooms.js'
 import invitationsRouter from '../../routes/invitations.js'
+import messagesRouter from '../../routes/messages.js'
 import { testPrisma } from './db.js'
 import { createMockIo } from './io.js'
 
@@ -25,5 +26,6 @@ export function buildTestApp({ io } = {}) {
   app.use('/api/auth', authRouter)
   app.use('/api/rooms', roomsRouter)
   app.use('/api/invitations', invitationsRouter)
+  app.use('/api/messages', messagesRouter)
   return app
 }

@@ -19,6 +19,8 @@ app.component('room-page', {
     const status = ref('ok') // 'ok' | 'notfound' | 'error'
     const showAdmin = ref(false)
     const flash = ref('')
+    const replyDraft = ref(null)
+    const joining = ref(false)
 
     const socket = useSocket()
     const unsubs = []
@@ -34,6 +36,10 @@ app.component('room-page', {
     })
     const isAdminOrOwner = computed(() => role.value === 'owner' || role.value === 'admin')
     const isNonOwner = computed(() => role.value !== 'owner' && role.value !== 'none')
+    // Spec §6.5: non-members of a public room see only room info + Join CTA.
+    // Derived from role (no RoomMember row) rather than a 403 from /members,
+    // because the current backend serves /members to any reader.
+    const isNonMember = computed(() => !!(room.value?.isPublic && role.value === 'none'))
 
     const setFlash = (m) => { flash.value = m; setTimeout(() => { if (flash.value === m) flash.value = '' }, 4000) }
 
@@ -42,18 +48,39 @@ app.component('room-page', {
       loading.value = true
       status.value = 'ok'
       try {
-        const [r, ms, auth] = await Promise.all([
+        const [r, auth] = await Promise.all([
           api('GET', `/api/rooms/${props.roomId}`),
-          api('GET', `/api/rooms/${props.roomId}/members`),
           api('GET', '/api/auth/me').catch(() => ({ user: null })),
         ])
         room.value = r?.room || r
-        members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
         me.value = auth.user || null
+        try {
+          const ms = await api('GET', `/api/rooms/${props.roomId}/members`)
+          members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
+        } catch (e) {
+          if (e?.status === 403 && room.value?.isPublic) {
+            members.value = []
+          } else {
+            throw e
+          }
+        }
       } catch (e) {
         status.value = e?.status === 404 ? 'notfound' : 'error'
       } finally {
         loading.value = false
+      }
+    }
+
+    const onJoin = async () => {
+      if (joining.value) return
+      joining.value = true
+      try {
+        await api('POST', `/api/rooms/${props.roomId}/join`)
+        await load()
+      } catch (e) {
+        setFlash(e?.message || 'Could not join this room')
+      } finally {
+        joining.value = false
       }
     }
 
@@ -103,6 +130,16 @@ app.component('room-page', {
     }
     const onRoomUpdated = (fields) => { if (room.value && fields) room.value = { ...room.value, ...fields } }
     const onRoomDeleted = () => { setFlash('This room was deleted.'); emit('navigate', '#/rooms') }
+
+    // ── Messaging wiring ──
+    const onReply = (m) => { replyDraft.value = m ? { id: m.id, author: m.author, content: m.content } : null }
+    const cancelReply = () => { replyDraft.value = null }
+    const onSend = ({ content, replyToId }) => {
+      socket.raw?.emit('send_message', { roomId: props.roomId, content, replyToId: replyToId ?? null })
+      replyDraft.value = null
+    }
+    const onTypingStart = () => socket.raw?.emit('typing_start', { roomId: props.roomId })
+    const onTypingStop  = () => socket.raw?.emit('typing_stop',  { roomId: props.roomId })
     const goRooms = () => emit('navigate', '#/rooms')
     const goInvitations = () => emit('navigate', '#/invitations')
     const retry = () => load()
@@ -135,10 +172,13 @@ app.component('room-page', {
 
     return {
       room, members, me, loading, status, showAdmin, flash,
-      role, isAdminOrOwner, isNonOwner,
+      replyDraft,
+      joining,
+      role, isAdminOrOwner, isNonOwner, isNonMember,
       memberCount, onlineCount, openedLabel, visibilityLabel, visibilityChipClass,
       youChipLabel, youChipClass, adminCount,
-      onManage, onLeave, onRoomUpdated, onRoomDeleted, goRooms, goInvitations, retry,
+      onManage, onLeave, onRoomUpdated, onRoomDeleted, onJoin, goRooms, goInvitations, retry,
+      onReply, cancelReply, onSend, onTypingStart, onTypingStop,
     }
   },
   template: `
@@ -147,6 +187,7 @@ app.component('room-page', {
         <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
         <nav class="ep-app__nav">
           <a href="#/rooms" class="ep-is-active" @click.prevent="goRooms">Rooms</a>
+          <a href="#/rooms/mine" @click.prevent="$emit('navigate','#/rooms/mine')">My rooms</a>
           <a href="#/invitations" @click.prevent="goInvitations">Invitations</a>
         </nav>
         <a class="ep-app__user" v-if="me" href="/profile" @click.prevent="$emit('navigate','/profile')" aria-label="Go to profile">
@@ -191,6 +232,49 @@ app.component('room-page', {
           <p class="ep-body ep-body--lead ep-muted">The room didn't load. Give it another try.</p>
           <button class="ep-btn ep-btn--ghost" @click="retry">Try again</button>
         </div>
+      </main>
+
+      <main v-else-if="isNonMember" class="ep-app__main ep-layout-single">
+        <section class="ep-pane ep-pane--primary" style="padding:0;">
+          <header class="room-header">
+            <div class="room-header__top">
+              <div class="room-header__name">
+                <div class="room-header__crumbs">
+                  <a href="#/rooms" @click.prevent="goRooms">Rooms</a>
+                  <span class="sep">/</span>
+                  <span class="ep-muted">{{ room.name }}</span>
+                </div>
+                <div class="room-header__title">
+                  <h1 class="ep-headline">{{ room.name }}</h1>
+                  <span :class="['ep-chip', visibilityChipClass]">{{ visibilityLabel }}</span>
+                </div>
+              </div>
+            </div>
+            <p v-if="room.description" class="ep-body ep-body--lead ep-muted room-header__desc">{{ room.description }}</p>
+            <div class="room-header__stats">
+              <div class="room-header__stat">
+                <span class="room-header__stat-value">{{ memberCount }}</span>
+                <span class="room-header__stat-label">{{ memberCount === 1 ? 'member' : 'members' }}</span>
+              </div>
+              <div class="room-header__stat">
+                <span class="room-header__stat-value">{{ onlineCount }}</span>
+                <span class="room-header__stat-label">online</span>
+              </div>
+              <div class="room-header__stat" v-if="openedLabel">
+                <span class="room-header__stat-value">{{ openedLabel }}</span>
+                <span class="room-header__stat-label">opened</span>
+              </div>
+            </div>
+          </header>
+          <section class="ep-empty" style="flex:1;">
+            <div class="ep-empty__art" aria-hidden="true">&amp;</div>
+            <h2 class="ep-headline">Pull up a chair.</h2>
+            <p class="ep-body ep-body--lead ep-muted">Join to read the conversation and add your voice.</p>
+            <button class="ep-btn ep-btn--primary" :disabled="joining" @click="onJoin">
+              {{ joining ? 'Joining\u2026' : 'Join this room' }}
+            </button>
+          </section>
+        </section>
       </main>
 
       <main v-else class="ep-app__main ep-layout-room">
@@ -240,11 +324,21 @@ app.component('room-page', {
             </div>
           </header>
 
-          <div class="ep-stage ep-stage--empty stage-placeholder" aria-label="Messages area">
-            <div class="ep-empty__art" aria-hidden="true">&amp;</div>
-            <p class="ep-eyebrow ep-eyebrow--quiet">Messaging shell</p>
-            <p class="ep-headline ep-headline--sm" style="color:var(--text-muted);">The room is ready.</p>
-            <p class="ep-stage__note">Message UI is owned by a separate sub-project. This shell exists to host it.</p>
+          <div class="ep-stage" style="display:flex; flex-direction:column; min-height:0; flex:1;" aria-label="Messages area">
+            <message-list
+              :room-id="roomId"
+              :role="role"
+              :me-id="me?.id"
+              @reply="onReply"
+            />
+            <message-composer
+              :room-id="roomId"
+              :reply-draft="replyDraft"
+              @send="onSend"
+              @typing-start="onTypingStart"
+              @typing-stop="onTypingStop"
+              @cancel-reply="cancelReply"
+            />
           </div>
         </section>
 

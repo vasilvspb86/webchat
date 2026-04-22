@@ -146,8 +146,8 @@ app.component('room-catalog', {
         <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
         <nav class="ep-app__nav">
           <a href="#/rooms" class="ep-is-active" @click.prevent="$emit('navigate','#/rooms')">Rooms</a>
+          <a href="#/rooms/mine" @click.prevent="$emit('navigate','#/rooms/mine')">My rooms</a>
           <a href="#/invitations" @click.prevent="openInvitations">Invitations</a>
-          <a href="#" @click.prevent>Friends</a>
         </nav>
         <a class="ep-app__user" href="/profile" @click.prevent="$emit('navigate','/profile')" aria-label="Go to profile">
           <span class="ep-muted" v-if="me">@{{ me.username }}</span>

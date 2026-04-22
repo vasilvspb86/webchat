@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Room — empty (first visit) · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <link rel="stylesheet" href="./_messaging.css">
+  <style>
+    .ep-app__main { min-height: calc(100vh - var(--nav-h)); }
+
+    .room-header-compact {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-5) var(--space-10);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+      position: sticky; top: var(--nav-h);
+      background: color-mix(in oklab, var(--surface-flat) 70%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: var(--z-sticky);
+    }
+    .room-header-compact h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      color: var(--text-primary);
+      font-variation-settings: 'opsz' 36, 'SOFT' 40, 'WONK' 0;
+      font-weight: var(--weight-semibold);
+      margin: 0;
+    }
+    .room-header-compact__spacer { flex: 1; }
+
+    .swatch {
+      position: fixed;
+      top: calc(var(--nav-h) + var(--space-4));
+      right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+
+    .stage-wrap {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: calc(100vh - var(--nav-h) - 56px);
+    }
+
+    .empty-stage {
+      display: grid;
+      place-items: center;
+      padding: var(--space-12) var(--space-7);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 06 · room · empty (first visit)</div>
+
+<div class="ep-app">
+
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#" class="ep-is-active">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+
+    <section class="ep-pane" style="padding:0;">
+
+      <header class="room-header-compact">
+        <h1>Slow mornings</h1>
+        <span class="ep-chip ep-chip--private" title="Only invited members can see this room">Private</span>
+        <span class="ep-chip ep-chip--owner">Owner</span>
+        <span class="room-header-compact__spacer"></span>
+        <button class="ep-btn ep-btn--ghost ep-btn--sm">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 7h10M7 2v10"/></svg>
+          Invite
+        </button>
+        <button class="ep-btn ep-btn--ghost ep-btn--sm">Settings</button>
+      </header>
+
+      <div class="stage-wrap">
+
+        <div class="empty-stage">
+          <div class="ep-msg-empty">
+            <div class="ep-msg-empty__art" aria-hidden="true">&para;</div>
+            <h2 class="ep-msg-empty__headline">Be the first to say hello.</h2>
+            <p class="ep-msg-empty__caption">
+              No one has spoken here yet. Write the opening line — the room takes its tone from whoever shows up first.
+            </p>
+          </div>
+        </div>
+
+        <!-- Composer focused, no reply chip, counter at zero -->
+        <form class="ep-composer" aria-label="Start the conversation" onsubmit="return false;">
+
+          <div class="ep-composer__shell ep-is-focused">
+            <label class="ep-visually-hidden" for="composer-ta-empty">Message</label>
+            <textarea id="composer-ta-empty"
+              class="ep-composer__textarea"
+              rows="2"
+              placeholder="Light the first ember…"
+              autofocus
+              aria-describedby="composer-hint-empty composer-counter-empty"></textarea>
+
+            <div class="ep-composer__footer">
+              <span class="ep-composer__hint" id="composer-hint-empty">
+                <kbd>Shift</kbd>+<kbd>Enter</kbd> newline · <kbd>Enter</kbd> send
+              </span>
+              <span class="ep-composer__counter" id="composer-counter-empty" data-state="ok" aria-live="polite">
+                0&nbsp;/&nbsp;3&#x202F;072&nbsp;B
+              </span>
+              <button class="ep-btn ep-btn--primary ep-btn--sm ep-composer__send" type="submit" aria-disabled="true">
+                Send
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 6h8M7 2l3 4-3 4"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

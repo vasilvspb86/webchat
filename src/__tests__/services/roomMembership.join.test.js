@@ -49,4 +49,12 @@ describe('joinRoom (group D)', () => {
     await testPrisma.roomBan.create({ data: { userId: other.id, roomId: room.id, bannedById: owner.id } })
     await expect(joinRoom(testPrisma, io, other.id, room.id)).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
+  it('joins the joiner\'s live sockets to the room channel', async () => {
+    const { io, joiner, room } = await seedPublic()
+    io.reset()
+    await joinRoom(testPrisma, io, joiner.id, room.id)
+    expect(io.subs).toContainEqual({
+      in: `user:${joiner.id}`, op: 'socketsJoin', target: `room:${room.id}`,
+    })
+  })
 })

@@ -1,63 +1,66 @@
-export async function sendMessage(io, socket, prisma, { roomId, content, replyToId, attachmentIds }) {
-  if (!roomId || (!content?.trim() && !attachmentIds?.length)) return
-  const { userId } = socket
-  try {
-    const member = await prisma.roomMember.findUnique({ where: { userId_roomId: { userId, roomId } } })
-    if (!member) return socket.emit('error', { message: 'Not a member of this room' })
-    if (content && Buffer.byteLength(content, 'utf8') > 3072) {
-      return socket.emit('error', { message: 'Message exceeds 3 KB limit' })
-    }
-    const message = await prisma.message.create({
-      data: {
-        roomId, authorId: userId, content: content || null, replyToId: replyToId || null,
-        ...(attachmentIds?.length && { attachments: { connect: attachmentIds.map(id => ({ id })) } }),
-      },
-      include: {
-        author: { select: { id: true, username: true } },
-        attachments: true,
-        replyTo: { select: { id: true, content: true, deleted: true, author: { select: { id: true, username: true } } } },
-      },
-    })
-    io.to(roomId).emit('new_message', message)
+import {
+  createMessage, editMessage as editMessageSvc, deleteMessage as deleteMessageSvc,
+  markRead as markReadSvc, getUnreadCount,
+} from '../services/messages.js'
 
-    const members = await prisma.roomMember.findMany({ where: { roomId, NOT: { userId } }, select: { userId: true, lastReadMessageId: true } })
-    for (const m of members) {
-      const anchor = m.lastReadMessageId ? await prisma.message.findUnique({ where: { id: m.lastReadMessageId } }) : null
-      const count = await prisma.message.count({
-        where: { roomId, deleted: false, ...(anchor && { createdAt: { gt: anchor.createdAt } }) },
-      })
-      io.to(`user:${m.userId}`).emit('unread_count', { roomId, count: Math.min(count, 99) })
-    }
+function emitRoom(io, roomId, event, payload) { io.to(`room:${roomId}`).emit(event, payload) }
+function emitUser(io, userId, event, payload) { io.to(`user:${userId}`).emit(event, payload) }
+
+async function fanoutUnread(io, prisma, roomId, excludeUserId) {
+  const others = await prisma.roomMember.findMany({
+    where: { roomId, NOT: { userId: excludeUserId } },
+    select: { userId: true },
+  })
+  await Promise.all(others.map(async (m) => {
+    const { count } = await getUnreadCount(prisma, m.userId, roomId)
+    emitUser(io, m.userId, 'unread_count', { roomId, count })
+  }))
+}
+
+export async function sendMessage(io, socket, prisma, { roomId, content, replyToId } = {}) {
+  try {
+    const message = await createMessage(prisma, socket.userId, roomId, { content, replyToId })
+    emitRoom(io, roomId, 'new_message', message)
+    await fanoutUnread(io, prisma, roomId, socket.userId)
   } catch (err) {
+    if (err?.code) return socket.emit('error', { code: err.code, message: err.message })
     console.error('sendMessage error', err)
-    socket.emit('error', { message: 'Failed to send message' })
+    socket.emit('error', { code: 'INTERNAL', message: 'Failed to send message' })
   }
 }
 
-export async function editMessage(io, socket, prisma, { messageId, content }) {
-  if (!content?.trim() || !messageId) return
+export async function editMessage(io, socket, prisma, { messageId, content } = {}) {
   try {
-    const message = await prisma.message.findUnique({ where: { id: messageId } })
-    if (!message || message.deleted || message.authorId !== socket.userId) return
-    await prisma.message.update({ where: { id: messageId }, data: { content, edited: true } })
-    io.to(message.roomId).emit('message_edited', { messageId, content })
-  } catch (err) { console.error('editMessage error', err) }
+    const updated = await editMessageSvc(prisma, socket.userId, messageId, { content })
+    emitRoom(io, updated.roomId, 'message_edited', { messageId: updated.id, content: updated.content })
+  } catch (err) {
+    if (err?.code) return socket.emit('error', { code: err.code, message: err.message })
+    console.error('editMessage error', err)
+  }
 }
 
-export async function deleteMessage(io, socket, prisma, { messageId }) {
-  if (!messageId) return
+export async function deleteMessage(io, socket, prisma, { messageId } = {}) {
   try {
-    const message = await prisma.message.findUnique({ where: { id: messageId } })
-    if (!message || message.deleted) return
-    const membership = await prisma.roomMember.findUnique({ where: { userId_roomId: { userId: socket.userId, roomId: message.roomId } } })
-    if (message.authorId !== socket.userId && !membership?.isAdmin) return
-    await prisma.message.update({ where: { id: messageId }, data: { deleted: true, content: null } })
-    io.to(message.roomId).emit('message_deleted', { messageId })
-  } catch (err) { console.error('deleteMessage error', err) }
+    const { roomId } = await deleteMessageSvc(prisma, socket.userId, messageId)
+    emitRoom(io, roomId, 'message_deleted', { messageId })
+  } catch (err) {
+    if (err?.code) return socket.emit('error', { code: err.code, message: err.message })
+    console.error('deleteMessage error', err)
+  }
 }
 
-export async function markRead(socket, prisma, { roomId, messageId }) {
+export async function markRead(socket, prisma, { roomId, messageId } = {}) {
   try {
-    await prisma.roomMember.updateMany({ where: { userId: socket.userId, roomId }, data: { lastReadMessageId: messageId } })
+    await markReadSvc(prisma, socket.userId, roomId, messageId)
   } catch (err) { console.error('markRead error', err) }
+}
+
+export function typingStart(_io, socket, { roomId } = {}) {
+  if (!roomId) return
+  socket.to(`room:${roomId}`).emit('typing_start', { userId: socket.userId, roomId })
+}
+
+export function typingStop(_io, socket, { roomId } = {}) {
+  if (!roomId) return
+  socket.to(`room:${roomId}`).emit('typing_stop', { userId: socket.userId, roomId })
 }
