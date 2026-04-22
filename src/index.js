@@ -13,6 +13,7 @@ import filesRouter from './routes/files.js'
 import usersRouter from './routes/users.js'
 import notificationsRouter from './routes/notifications.js'
 import invitationsRouter from './routes/invitations.js'
+import messagesRouter from './routes/messages.js'
 import { initSocket } from './socket/index.js'
 import { startCleanupJob } from './jobs/cleanup.js'
 
@@ -57,6 +58,7 @@ app.use('/api/files', filesRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/invitations', invitationsRouter)
+app.use('/api/messages', messagesRouter)
 
 initSocket(io, prisma)
 startCleanupJob(prisma)
