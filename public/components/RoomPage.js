@@ -160,6 +160,7 @@ app.component('room-page', {
         <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
         <nav class="ep-app__nav">
           <a href="#/rooms" class="ep-is-active" @click.prevent="goRooms">Rooms</a>
+          <a href="#/rooms/mine" @click.prevent="$emit('navigate','#/rooms/mine')">My rooms</a>
           <a href="#/invitations" @click.prevent="goInvitations">Invitations</a>
         </nav>
         <a class="ep-app__user" v-if="me" href="/profile" @click.prevent="$emit('navigate','/profile')" aria-label="Go to profile">
