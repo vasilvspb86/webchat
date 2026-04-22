@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { testPrisma, resetDb } from '../helpers/db.js'
 import { createRoom } from '../../services/rooms.js'
-import { joinRoom } from '../../services/roomMembership.js'
+import { joinRoom, removeMember } from '../../services/roomMembership.js'
 import { createMessage, deleteMessage } from '../../services/messages.js'
 import { createMockIo } from '../helpers/io.js'
 import bcrypt from 'bcryptjs'
@@ -58,5 +58,27 @@ describe('deleteMessage', () => {
     await deleteMessage(testPrisma, alice.id, m.id)
     await expect(deleteMessage(testPrisma, alice.id, m.id))
       .rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  it('non-member cannot delete a message in a public room', async () => {
+    const io = createMockIo()
+    const alice = await seedUser('alice')
+    const bob   = await seedUser('bob')   // never joins
+    const room = await createRoom(testPrisma, io, alice.id, { name: 'Hall', isPublic: true })
+    const aliceMsg = await createMessage(testPrisma, alice.id, room.id, { content: 'hi' })
+    await expect(deleteMessage(testPrisma, bob.id, aliceMsg.id))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
+  it('banned user cannot delete their own prior message', async () => {
+    const io = createMockIo()
+    const alice = await seedUser('alice')   // owner
+    const bob   = await seedUser('bob')
+    const room = await createRoom(testPrisma, io, alice.id, { name: 'Hall', isPublic: true })
+    await joinRoom(testPrisma, io, bob.id, room.id)
+    const bobMsg = await createMessage(testPrisma, bob.id, room.id, { content: 'mine' })
+    await removeMember(testPrisma, io, alice.id, room.id, bob.id)  // bans bob
+    await expect(deleteMessage(testPrisma, bob.id, bobMsg.id))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 })
