@@ -31,6 +31,13 @@ router.get('/', async (req, res, next) => {
   } catch (err) { sendError(res, err, next) }
 })
 
+router.get('/mine', async (req, res, next) => {
+  try {
+    const rooms = await membership.listMyRooms(req.app.locals.prisma, req.session.userId)
+    res.json({ rooms })
+  } catch (err) { sendError(res, err, next) }
+})
+
 router.get('/:id', async (req, res, next) => {
   try {
     const room = await rooms.getRoom(req.app.locals.prisma, req.session.userId, req.params.id)
