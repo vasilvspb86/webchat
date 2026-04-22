@@ -35,6 +35,15 @@ describe('inviteUser / accept / decline (group F)', () => {
     expect(await testPrisma.notification.findUnique({ where: { id: notif.id } })).toBeNull()
     expect(io.emitted.find((e) => e.event === 'member_joined')).toBeTruthy()
   })
+  it('scenario 33a: accept joins accepter\'s live sockets to the room channel', async () => {
+    const { io, owner, guest, room } = await seedPrivate()
+    const notif = await inviteUser(testPrisma, io, owner.id, room.id, { userId: guest.id })
+    io.reset()
+    await acceptInvitation(testPrisma, io, guest.id, notif.id)
+    expect(io.subs).toContainEqual({
+      in: `user:${guest.id}`, op: 'socketsJoin', target: `room:${room.id}`,
+    })
+  })
   it('scenario 34: decline → notification deleted, no membership change', async () => {
     const { io, owner, guest, room } = await seedPrivate()
     const notif = await inviteUser(testPrisma, io, owner.id, room.id, { userId: guest.id })

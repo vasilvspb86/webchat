@@ -55,4 +55,12 @@ describe('createRoom (group A)', () => {
     const priv = await createRoom(testPrisma, io, owner.id, { name: 'priv', isPublic: false })
     expect(priv.isPublic).toBe(false)
   })
+  it('joins creator\'s live sockets to the room channel so realtime reaches them', async () => {
+    const io = createMockIo()
+    const owner = await mkUser()
+    const room = await createRoom(testPrisma, io, owner.id, { name: 'gen', isPublic: true })
+    expect(io.subs).toContainEqual({
+      in: `user:${owner.id}`, op: 'socketsJoin', target: `room:${room.id}`,
+    })
+  })
 })

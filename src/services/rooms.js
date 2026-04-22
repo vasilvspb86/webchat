@@ -33,6 +33,10 @@ export async function createRoom(prisma, io, userId, { name, description, isPubl
       await tx.roomMember.create({ data: { userId, roomId: r.id, isAdmin: true } })
       return r
     })
+    // Subscribe the creator's already-connected sockets to this room's channel.
+    // Without this, sockets that connected before the room existed never
+    // receive its realtime events (new_message, typing, member_*).
+    io?.in(`user:${userId}`).socketsJoin(`room:${room.id}`)
     return room
   } catch (err) {
     if (err.code === 'P2002') throw new RoomError('NAME_TAKEN', 'Room name already taken')

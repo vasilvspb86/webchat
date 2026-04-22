@@ -36,6 +36,7 @@ export async function joinRoom(prisma, io, userId, roomId) {
     roomId,
     member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt },
   })
+  io?.in(`user:${userId}`).socketsJoin(`room:${roomId}`)
   return member
 }
 
@@ -110,6 +111,7 @@ export async function acceptInvitation(prisma, io, userId, notificationId) {
     roomId,
     member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt },
   })
+  io?.in(`user:${userId}`).socketsJoin(`room:${roomId}`)
 }
 
 export async function declineInvitation(prisma, userId, notificationId) {
