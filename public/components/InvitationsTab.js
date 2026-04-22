@@ -102,8 +102,8 @@ app.component('invitations-tab', {
       <div v-if="error" class="ep-field__error" role="alert">{{ error }}</div>
       <div v-if="success" class="ep-eyebrow ep-eyebrow--info" role="status">{{ success }}</div>
 
-      <p class="ep-body ep-muted" style="margin-top:var(--space-4);">
-        Pending invitations list — wired up when endpoint is available.
+      <p v-if="!isPublic" class="ep-body ep-muted" style="margin-top:var(--space-4);">
+        See pending invitations and revoke them in the <strong>Pending</strong> tab.
       </p>
     </section>
   `,
