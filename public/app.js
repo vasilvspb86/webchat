@@ -171,6 +171,11 @@ export const app = createApp({
   `,
 })
 
-// Defer mount so component modules (RoomCatalog, RoomPage, etc.) can
-// register themselves via app.component(...) before the first render.
-queueMicrotask(() => app.mount('#app'))
+// Defer mount until ALL deferred <script type="module"> component files
+// finish evaluating — each one registers itself via app.component(...).
+// queueMicrotask fires *between* module evaluations (microtask queue
+// drains between them), so it mounts before LoginPage/AuthShell/etc.
+// register, leaving Vue to treat their tags as unknown HTML elements.
+// `load` fires after every deferred module script is done.
+if (document.readyState === 'complete') app.mount('#app')
+else window.addEventListener('load', () => app.mount('#app'), { once: true })
