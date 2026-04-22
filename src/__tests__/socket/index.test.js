@@ -18,7 +18,11 @@ describe('initSocket', () => {
       notification: { findMany: vi.fn().mockResolvedValue([]) },
     }
     let connHandler
-    const io = { use: vi.fn(), on: vi.fn((ev, h) => { if (ev === 'connection') connHandler = h }) }
+    const io = {
+      use: vi.fn(),
+      on: vi.fn((ev, h) => { if (ev === 'connection') connHandler = h }),
+      to: vi.fn(() => ({ emit: vi.fn() })),
+    }
     initSocket(io, prisma)
     const socket = mockSocket('U1', joined)
     await connHandler(socket)
