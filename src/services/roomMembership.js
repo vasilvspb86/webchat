@@ -206,3 +206,45 @@ export async function revokeAdmin(prisma, io, callerId, roomId, targetId) {
   })
   emitRoomEvent(io, roomId, 'admin_revoked', { roomId, userId: targetId })
 }
+
+export async function listMyRooms(prisma, userId) {
+  const memberships = await prisma.roomMember.findMany({
+    where: { userId },
+    include: {
+      room: {
+        select: {
+          id: true, name: true, description: true, isPublic: true, ownerId: true, createdAt: true,
+          _count: { select: { members: true } },
+        },
+      },
+    },
+  })
+
+  const roomIds = memberships.map((m) => m.roomId)
+  const latest = roomIds.length === 0 ? [] : await prisma.message.groupBy({
+    by: ['roomId'],
+    where: { roomId: { in: roomIds }, deleted: false },
+    _max: { createdAt: true },
+  })
+  const lastByRoom = Object.fromEntries(latest.map((r) => [r.roomId, r._max.createdAt]))
+
+  const rows = memberships.map((m) => ({
+    id: m.room.id,
+    name: m.room.name,
+    description: m.room.description,
+    isPublic: m.room.isPublic,
+    isAdmin: m.isAdmin,
+    isOwner: m.room.ownerId === userId,
+    memberCount: m.room._count.members,
+    lastMessageAt: lastByRoom[m.room.id] ?? null,
+    createdAt: m.room.createdAt,
+  }))
+
+  rows.sort((a, b) => {
+    if (a.lastMessageAt && b.lastMessageAt) return b.lastMessageAt - a.lastMessageAt
+    if (a.lastMessageAt) return -1
+    if (b.lastMessageAt) return 1
+    return a.name.localeCompare(b.name)
+  })
+  return rows
+}
