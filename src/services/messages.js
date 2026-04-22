@@ -1,0 +1,42 @@
+import { MessageError } from './messageErrors.js'
+import { validateMessageContent } from '../utils/validate.js'
+import { resolveRole } from './roomAuthorization.js'
+
+const REPLY_PREVIEW_SELECT = {
+  id: true,
+  content: true,
+  deleted: true,
+  author: { select: { id: true, username: true } },
+}
+
+async function loadCallerRole(prisma, userId, roomId) {
+  const room = await prisma.room.findUnique({ where: { id: roomId } })
+  if (!room) throw new MessageError('NOT_FOUND', 'Room not found')
+  const [memberRow, banRow] = await Promise.all([
+    prisma.roomMember.findUnique({ where: { userId_roomId: { userId, roomId } } }),
+    prisma.roomBan.findUnique({    where: { userId_roomId: { userId, roomId } } }),
+  ])
+  return { room, memberRow, role: resolveRole(userId, room, memberRow, banRow) }
+}
+
+export async function createMessage(prisma, userId, roomId, { content, replyToId = null }) {
+  const contentErr = validateMessageContent(content)
+  if (contentErr) throw new MessageError('INVALID_CONTENT', contentErr)
+
+  const { memberRow } = await loadCallerRole(prisma, userId, roomId)
+  if (!memberRow) throw new MessageError('FORBIDDEN', 'Not a member of this room')
+
+  if (replyToId) {
+    const ref = await prisma.message.findUnique({ where: { id: replyToId } })
+    if (!ref) throw new MessageError('REPLY_NOT_FOUND', 'Reply target not found')
+    if (ref.roomId !== roomId) throw new MessageError('REPLY_IN_OTHER_ROOM', 'Reply target is in a different room')
+  }
+
+  return prisma.message.create({
+    data: { roomId, authorId: userId, content: content.trim(), replyToId: replyToId || null },
+    include: {
+      author:  { select: { id: true, username: true } },
+      replyTo: { select: REPLY_PREVIEW_SELECT },
+    },
+  })
+}
