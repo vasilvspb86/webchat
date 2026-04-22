@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Room — scrolled history · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <link rel="stylesheet" href="./_messaging.css">
+  <style>
+    .ep-app__main { min-height: calc(100vh - var(--nav-h)); }
+
+    .room-header-compact {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-5) var(--space-10);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+      position: sticky; top: var(--nav-h);
+      background: color-mix(in oklab, var(--surface-flat) 70%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: var(--z-sticky);
+    }
+    .room-header-compact h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      color: var(--text-primary);
+      font-variation-settings: 'opsz' 36, 'SOFT' 40, 'WONK' 0;
+      font-weight: var(--weight-semibold);
+      margin: 0;
+    }
+    .room-header-compact__spacer { flex: 1; }
+
+    .swatch {
+      position: fixed;
+      top: calc(var(--nav-h) + var(--space-4));
+      right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+
+    .stage-wrap {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: calc(100vh - var(--nav-h) - 56px);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 07 · room · scrolled (load earlier · day break · unread)</div>
+
+<div class="ep-app">
+
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#" class="ep-is-active">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+
+    <section class="ep-pane" style="padding:0;">
+
+      <header class="room-header-compact">
+        <h1>Design standups</h1>
+        <span class="ep-chip ep-chip--private">Private</span>
+        <span class="ep-chip ep-chip--member">Member</span>
+        <span class="room-header-compact__spacer"></span>
+        <button class="ep-btn ep-btn--ghost ep-btn--sm">Settings</button>
+      </header>
+
+      <div class="stage-wrap">
+
+        <div class="ep-timeline" role="log" aria-live="polite" aria-label="Message timeline">
+
+          <!-- Load earlier — at the top -->
+          <div class="ep-timeline__load-more">
+            <button class="ep-btn ep-btn--ghost ep-btn--sm" type="button">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 7l4-4 4 4M6 3v7"/></svg>
+              Load earlier
+            </button>
+          </div>
+
+          <!-- Yesterday -->
+          <div class="ep-day-sep" role="separator" aria-label="Yesterday">
+            <span class="ep-day-sep__plate">Yesterday</span>
+          </div>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Lucia">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="moss" aria-hidden="true">L</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@lucia</cite>
+              <time class="ep-msg__time" datetime="2026-04-21T17:42">17:42</time>
+            </header>
+            <p class="ep-msg__body">Figma file's moved to the shared team; the old link is dead after Friday. Updating the brief now.</p>
+          </article>
+
+          <article class="ep-msg" data-variant="self" role="article" aria-label="Your message">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="ember" aria-hidden="true">V</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@victoria</cite>
+              <time class="ep-msg__time" datetime="2026-04-21T17:50">17:50</time>
+              <span class="ep-msg__edited">(edited)</span>
+            </header>
+            <p class="ep-msg__body">Got the new link, thanks. I'll cascade it to the delivery channel before EOD.</p>
+          </article>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Kenji">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="tide" aria-hidden="true">K</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@kenji</cite>
+              <time class="ep-msg__time" datetime="2026-04-21T19:05">19:05</time>
+            </header>
+            <p class="ep-msg__body">Reviewed the error states for the composer — think we're over-indexing on the red border. Let's switch to the quieter gold warn first, then red only at hard-limit.</p>
+          </article>
+
+          <!-- Today -->
+          <div class="ep-day-sep" role="separator" aria-label="Today">
+            <span class="ep-day-sep__plate">Today</span>
+          </div>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Marco">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="gold" aria-hidden="true">M</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@marco</cite>
+              <time class="ep-msg__time" datetime="2026-04-22T08:14">8:14</time>
+            </header>
+            <p class="ep-msg__body">Morning all — I'll take the summary of yesterday's thread and post it in #announce by noon.</p>
+          </article>
+
+          <!-- Unread divider - first unread -->
+          <div class="ep-unread-div" role="separator" aria-label="New messages">
+            <span class="ep-unread-div__label">New</span>
+          </div>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Ana">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="tide" aria-hidden="true">A</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@ana</cite>
+              <time class="ep-msg__time" datetime="2026-04-22T09:02">9:02</time>
+            </header>
+            <blockquote class="ep-msg__reply" aria-label="Replying to @kenji">
+              <span class="ep-msg__reply-author">@kenji</span>
+              <span class="ep-msg__reply-body">Reviewed the error states for the composer — think we're over-indexing on the red border…</span>
+            </blockquote>
+            <p class="ep-msg__body">Agree. Also — can we make the counter itself feel quieter below 2 KB? Right now it's always present.</p>
+          </article>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Jun">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="moss" aria-hidden="true">J</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@jun</cite>
+              <time class="ep-msg__time" datetime="2026-04-22T09:07">9:07</time>
+            </header>
+            <p class="ep-msg__body">+1 on that. Faint grey until 75%, gold at warn, red at over. Simple escalation.</p>
+          </article>
+
+          <article class="ep-msg" data-variant="other" role="article" aria-label="Message from Lucia">
+            <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="moss" aria-hidden="true">L</span>
+            <header class="ep-msg__head">
+              <cite class="ep-msg__author">@lucia</cite>
+              <time class="ep-msg__time" datetime="2026-04-22T09:11">9:11</time>
+            </header>
+            <p class="ep-msg__body">Filing it as a follow-up — not urgent for the hackathon cut.</p>
+          </article>
+
+        </div>
+
+        <!-- Composer at rest -->
+        <form class="ep-composer" aria-label="Message the room" onsubmit="return false;">
+          <div class="ep-composer__shell">
+            <label class="ep-visually-hidden" for="composer-ta-scroll">Message</label>
+            <textarea id="composer-ta-scroll"
+              class="ep-composer__textarea"
+              rows="2"
+              placeholder="Add to the conversation…"
+              aria-describedby="composer-hint-scroll composer-counter-scroll"></textarea>
+            <div class="ep-composer__footer">
+              <span class="ep-composer__hint" id="composer-hint-scroll">
+                <kbd>Shift</kbd>+<kbd>Enter</kbd> newline · <kbd>Enter</kbd> send
+              </span>
+              <span class="ep-composer__counter" id="composer-counter-scroll" data-state="ok">
+                0&nbsp;/&nbsp;3&#x202F;072&nbsp;B
+              </span>
+              <button class="ep-btn ep-btn--primary ep-btn--sm ep-composer__send" type="submit" aria-disabled="true">
+                Send
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 6h8M7 2l3 4-3 4"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

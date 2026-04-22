@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>My rooms · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <link rel="stylesheet" href="./_messaging.css">
+  <style>
+    .ep-app__main { min-height: calc(100vh - var(--nav-h)); padding: var(--space-6) 0 var(--space-10); }
+    .swatch {
+      position: fixed;
+      top: calc(var(--nav-h) + var(--space-4));
+      right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 08 · my rooms · the caller's rooms only</div>
+
+<div class="ep-app">
+
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#" class="ep-is-active">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+    <section class="ep-pane" style="padding:0;">
+      <div class="ep-my-rooms">
+
+        <header class="ep-my-rooms__head">
+          <span class="ep-eyebrow">Your rooms</span>
+          <h1>
+            The places <em>you already belong</em>
+          </h1>
+          <p class="ep-body ep-body--lead ep-muted" style="max-width: 60ch;">
+            Rooms you've opened, been made admin of, or joined. Sorted by the last message. Unread counts stop at 99 — the rest just means "more".
+          </p>
+        </header>
+
+        <!-- Rooms list -->
+        <div role="list" style="display: grid; gap: var(--space-3);">
+
+          <!-- Owner room · has unread -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Slow mornings — 3 unread">
+            <span class="ep-avatar ep-avatar--lg" data-tint="ember" aria-hidden="true">S</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Slow mornings</span>
+                <span class="ep-chip ep-chip--owner">Owner</span>
+                <span class="ep-chip ep-chip--private">Private</span>
+              </div>
+              <div class="ep-room-row__preview">
+                <span class="ep-room-row__preview-author">@marco:</span>
+                <span>&nbsp;Fresh roaster opened on Rustaveli — the light Ethiopian flight is stunning, bring cash…</span>
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-22T09:14">9:14</time>
+              <span class="ep-unread-bubble" aria-label="3 unread messages">3</span>
+            </div>
+          </a>
+
+          <!-- Admin room · many unread -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Coffee corner — 42 unread">
+            <span class="ep-avatar ep-avatar--lg" data-tint="gold" aria-hidden="true">C</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Coffee corner</span>
+                <span class="ep-chip ep-chip--admin">Admin</span>
+                <span class="ep-chip ep-chip--public">Public</span>
+              </div>
+              <div class="ep-room-row__preview">
+                <span class="ep-room-row__preview-author">@ana:</span>
+                <span>&nbsp;We meeting there on Saturday then? I'm in if so.</span>
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-22T09:27">9:27</time>
+              <span class="ep-unread-bubble" aria-label="42 unread messages">42</span>
+            </div>
+          </a>
+
+          <!-- Member · capped unread -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Design standups — 99 plus unread">
+            <span class="ep-avatar ep-avatar--lg" data-tint="tide" aria-hidden="true">D</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Design standups</span>
+                <span class="ep-chip ep-chip--member">Member</span>
+                <span class="ep-chip ep-chip--private">Private</span>
+              </div>
+              <div class="ep-room-row__preview">
+                <span class="ep-room-row__preview-author">@lucia:</span>
+                <span>&nbsp;Filing it as a follow-up — not urgent for the hackathon cut.</span>
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-22T09:11">9:11</time>
+              <span class="ep-unread-bubble" aria-label="99 or more unread messages">99+</span>
+            </div>
+          </a>
+
+          <!-- Member · no unread -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Weeknotes">
+            <span class="ep-avatar ep-avatar--lg" data-tint="moss" aria-hidden="true">W</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Weeknotes</span>
+                <span class="ep-chip ep-chip--member">Member</span>
+                <span class="ep-chip ep-chip--public">Public</span>
+              </div>
+              <div class="ep-room-row__preview">
+                <span class="ep-room-row__preview-author">@theo:</span>
+                <span>&nbsp;Shipped the rooms layer behind a feature flag. Screenshots in the thread.</span>
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-21T22:05">yesterday</time>
+            </div>
+          </a>
+
+          <!-- Member · no messages yet -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Kitchen brigade — no messages yet">
+            <span class="ep-avatar ep-avatar--lg" data-tint="rust" aria-hidden="true">K</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Kitchen brigade</span>
+                <span class="ep-chip ep-chip--member">Member</span>
+                <span class="ep-chip ep-chip--public">Public</span>
+              </div>
+              <div class="ep-room-row__preview ep-room-row__preview--empty">
+                Nothing said here yet.
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-18T10:00">Apr 18</time>
+            </div>
+          </a>
+
+          <!-- Older · read, muted -->
+          <a class="ep-room-row" href="#" role="listitem" aria-label="Climbing gossip">
+            <span class="ep-avatar ep-avatar--lg" data-tint="ember" aria-hidden="true">C</span>
+            <div class="ep-room-row__body">
+              <div class="ep-room-row__title">
+                <span class="ep-room-row__name">Climbing gossip</span>
+                <span class="ep-chip ep-chip--member">Member</span>
+                <span class="ep-chip ep-chip--public">Public</span>
+              </div>
+              <div class="ep-room-row__preview">
+                <span class="ep-room-row__preview-author">@sara:</span>
+                <span>&nbsp;If the forecast holds, Sunday at the slab around 10?</span>
+              </div>
+            </div>
+            <div class="ep-room-row__meta">
+              <time class="ep-room-row__time" datetime="2026-04-20T14:22">Apr 20</time>
+            </div>
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>

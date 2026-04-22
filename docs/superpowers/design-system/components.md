@@ -339,6 +339,301 @@ on desktop; collapses to single column with a toggle under 900px.
 
 ---
 
+## Messaging layer
+
+These contracts extend the base system for the rooms conversation view. Styles
+live in `mockups/_messaging.css` — same token vocabulary as the rest of the
+system. Mockups: `room-populated.html`, `room-empty.html`, `room-scrolling.html`,
+`my-rooms.html`, `admin-pending-invitations.html`.
+
+**Design direction — "paper letters around a fire":** bubbles are subtly
+asymmetric; the corner nearest the speaker is tightened to `--radius-sm` so the
+shape leans toward its author. Self bubbles carry a warm ember tint; other
+bubbles are paper on raised ink. Reply quotes use a gold left-rule. The composer
+placeholder is Fraunces italic — a small flourish of voice before the user
+starts typing.
+
+---
+
+### MessageBubble
+
+```html
+<!-- other -->
+<article class="ep-msg" data-variant="other" role="article" aria-label="Message from Marco">
+  <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="gold" aria-hidden="true">M</span>
+  <header class="ep-msg__head">
+    <cite class="ep-msg__author">@marco</cite>
+    <time class="ep-msg__time" datetime="2026-04-22T09:14">9:14</time>
+  </header>
+  <p class="ep-msg__body">Fresh roaster opened on Rustaveli — bring cash.</p>
+  <div class="ep-msg__actions" role="group" aria-label="Message actions">
+    <button class="ep-btn ep-btn--icon ep-btn--xs" aria-label="Reply">…</button>
+  </div>
+</article>
+
+<!-- self (ember-tinted, right-aligned) -->
+<article class="ep-msg" data-variant="self" role="article" aria-label="Your message">
+  <span class="ep-avatar ep-avatar--sm ep-msg__avatar" data-tint="ember" aria-hidden="true">V</span>
+  <header class="ep-msg__head">
+    <cite class="ep-msg__author">@victoria</cite>
+    <time class="ep-msg__time" datetime="2026-04-22T09:15">9:15</time>
+    <span class="ep-msg__edited">(edited)</span>
+  </header>
+  <p class="ep-msg__body">Count me in — 11am works.</p>
+  <div class="ep-msg__actions">
+    <button class="ep-btn ep-btn--icon ep-btn--xs" aria-label="Edit">…</button>
+    <button class="ep-btn ep-btn--icon ep-btn--xs" aria-label="Delete">…</button>
+  </div>
+</article>
+
+<!-- system placeholder (deleted message) -->
+<article class="ep-msg" data-variant="system" role="article" aria-label="Deleted message">
+  <p class="ep-msg__body ep-msg__body--deleted">Deleted message.</p>
+</article>
+
+<!-- editing state — inline textarea replaces body -->
+<article class="ep-msg ep-is-editing" data-variant="self" role="article">
+  <header class="ep-msg__head">…</header>
+  <textarea class="ep-msg__editor">Count me in — 11am works.</textarea>
+  <div class="ep-msg__editor-actions">
+    <button class="ep-btn ep-btn--ghost ep-btn--sm">Cancel</button>
+    <button class="ep-btn ep-btn--primary ep-btn--sm">Save</button>
+  </div>
+</article>
+```
+
+**Vue contract (`<MessageBubble>`):**
+```ts
+props: {
+  message: {
+    id: string,
+    content: string,
+    deleted: boolean,
+    edited: boolean,
+    createdAt: string,       // ISO timestamp
+    author: { id, username, avatarTint },
+    replyTo?: { id, authorUsername, content, deleted },
+  },
+  canEdit:   boolean,   // hides/shows edit action
+  canDelete: boolean,   // hides/shows delete action
+  isSelf:    boolean,   // drives data-variant and alignment
+}
+emits: ['edit', 'delete', 'reply']
+```
+
+- `data-variant="self"` flips alignment, tints bubble with ember gradient, moves action pill to the left.
+- `data-variant="other"` paper-on-ink background, action pill on the right.
+- `data-variant="system"` dashed border, muted italic body, no actions, no avatar, no head.
+- `.ep-msg__edited` renders a quiet "(edited)" suffix inside the head — faint text.
+- `.ep-msg__actions` is revealed on `:hover, :focus-within` with a 120ms opacity + translate transition. Keyboard-accessible.
+- `.ep-is-editing` swaps body for a textarea and shows Cancel / Save buttons; bubble border becomes `--accent-primary` with a 4px veil glow.
+- Reduced-motion: action pill fades in without the translate; no other bubble animations.
+
+---
+
+### ReplyQuote
+
+```html
+<blockquote class="ep-msg__reply" aria-label="Replying to @ana">
+  <span class="ep-msg__reply-author">@ana</span>
+  <span class="ep-msg__reply-body">Agree — can we make the counter quieter below 2 KB?</span>
+</blockquote>
+
+<!-- original deleted -->
+<blockquote class="ep-msg__reply ep-msg__reply--deleted" aria-label="Replying to a deleted message">
+  <span class="ep-msg__reply-body">deleted message</span>
+</blockquote>
+```
+
+**Vue contract (`<ReplyQuote>`):**
+```ts
+props: {
+  replyTo: {
+    authorUsername: string,
+    content: string,
+    deleted: boolean,
+  }
+}
+```
+
+- Sits inside a `<MessageBubble>` above `.ep-msg__body`.
+- `border-left: 2px solid var(--accent-gold)`, gold 7% veil background.
+- Author line uses `all-small-caps` with gold tint.
+- Body clamped to a single line with `white-space: nowrap; text-overflow: ellipsis`.
+- `--deleted` variant drops the author, italicises the body, and reads as
+  "deleted message" in muted faint text.
+
+---
+
+### Composer
+
+```html
+<form class="ep-composer" aria-label="Message the room" onsubmit="return false;">
+
+  <!-- Optional reply chip -->
+  <div class="ep-composer__reply-chip" role="status" aria-live="polite">
+    <span class="ep-composer__reply-chip-body">
+      <span class="ep-composer__reply-chip-author">@ana</span>
+      <span class="ep-composer__reply-chip-preview">Agree — can we make the counter quieter…</span>
+    </span>
+    <button type="button" class="ep-btn ep-btn--icon ep-btn--xs" aria-label="Dismiss reply">×</button>
+  </div>
+
+  <div class="ep-composer__shell ep-is-focused">
+    <label class="ep-visually-hidden" for="composer-ta">Message</label>
+    <textarea id="composer-ta"
+      class="ep-composer__textarea"
+      rows="2"
+      placeholder="Light the first ember…"
+      autofocus
+      aria-describedby="composer-hint composer-counter"></textarea>
+
+    <div class="ep-composer__footer">
+      <span class="ep-composer__hint" id="composer-hint">
+        <kbd>Shift</kbd>+<kbd>Enter</kbd> newline · <kbd>Enter</kbd> send
+      </span>
+      <span class="ep-composer__counter" id="composer-counter" data-state="ok" aria-live="polite">
+        21&nbsp;/&nbsp;3&#x202F;072&nbsp;B
+      </span>
+      <button class="ep-btn ep-btn--primary ep-btn--sm ep-composer__send" type="submit">
+        Send
+      </button>
+    </div>
+  </div>
+</form>
+```
+
+**Vue contract (`<Composer>`):**
+```ts
+props: {
+  replyTo?: {
+    messageId: string,
+    authorUsername: string,
+    preview: string,
+  },
+  maxBytes: number,        // default 3072 (3 KB)
+  warnBytes: number,       // default 2816 (2.75 KB)
+  placeholder?: string,
+}
+emits: ['send', 'dismissReply', 'typingStart', 'typingStop']
+```
+
+- `maxlength` is NOT used; validation is bytewise (`TextEncoder` in parent).
+- `.ep-composer__counter[data-state="ok|warn|over"]` drives the colour
+  escalation: default muted → gold at `>= warnBytes` → danger at `> maxBytes`.
+- Send button becomes `aria-disabled="true"` when content is empty or over byte
+  limit. It does NOT fire `submit`.
+- `Enter` emits `send`; `Shift+Enter` inserts a newline.
+- Reply chip is rendered only when `replyTo` is non-null. Dismissing emits
+  `dismissReply`, which the parent clears.
+- Placeholder in the focused empty state uses Fraunces italic via
+  `font-variation-settings: 'opsz' 72, 'SOFT' 100, 'WONK' 1`.
+- Reduced-motion: no focus-lift transition on the shell.
+
+---
+
+### TypingIndicator
+
+```html
+<div class="ep-typing" role="status" aria-live="polite" aria-atomic="true">
+  <span class="ep-typing__names">Marco and Ana</span>
+  <span class="ep-typing__verb">are typing</span>
+  <span class="ep-typing__dots" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </span>
+</div>
+```
+
+**Vue contract (`<TypingIndicator>`):**
+```ts
+props: {
+  typers: Array<{ userId: string, username: string }>,  // max 3 rendered
+}
+// Auto-clears on `typing_stop` or after 5s without a heartbeat.
+// Grammar: 0 → hidden, 1 → "@marco is typing", 2 → "@marco and @ana are typing",
+//          3+ → "@marco, @ana and 1 other are typing".
+```
+
+- Pill floats above the composer, flush with the message list bottom gutter.
+- `.ep-typing__dots span` animates sequentially (`ep-typing-bounce` 1.2s).
+- `prefers-reduced-motion: reduce` replaces the dots animation with a static
+  three-dot glyph. No size or opacity pulse.
+- Appears/disappears via a subtle fade — no layout thrash; the pill is
+  absolutely positioned against the composer.
+
+---
+
+### DaySeparator
+
+```html
+<div class="ep-day-sep" role="separator" aria-label="Today">
+  <span class="ep-day-sep__plate">Today</span>
+</div>
+```
+
+**Vue contract (`<DaySeparator>`):**
+```ts
+props: {
+  label: string,   // "Today", "Yesterday", or localised long date e.g. "Apr 18"
+}
+```
+
+- Horizontal rule made of two gradient hairlines flanking a plate rendered on
+  `--surface-raised`.
+- Plate uses Fraunces italic at `--text-xs` with `tracking-caps`.
+- Purely decorative; does not interrupt scroll anchoring.
+
+---
+
+### UnreadDivider
+
+```html
+<div class="ep-unread-div" role="separator" aria-label="New messages">
+  <span class="ep-unread-div__label">New</span>
+</div>
+```
+
+**Vue contract (`<UnreadDivider>`):**
+```ts
+// No props. The parent (MessageList) decides placement: inserted once, before
+// the first unread message on initial render. Removed after the user
+// acknowledges (scrolls past or marks read).
+```
+
+- Ember-tinted hairlines with a soft glow; label uses an
+  `ember-glow → accent-primary` gradient text clip.
+- Sticks to the top of the scroll container (`position: sticky; top: 0`) so it
+  remains visible while the user scrolls through unread messages; releases when
+  scrolled past.
+- Reduced-motion: no glow pulse — the label sits static.
+
+---
+
+### PresenceDot
+
+```html
+<!-- online -->
+<span class="ep-presence-dot" data-presence="online" aria-label="Online"></span>
+<!-- offline -->
+<span class="ep-presence-dot" data-presence="offline" aria-label="Offline"></span>
+```
+
+**Vue contract (`<PresenceDot>`):**
+```ts
+props: {
+  status: 'online' | 'offline',   // only two states in this sub-project
+}
+```
+
+- **State subset only:** `online` and `offline`. `away`/`afk`/`dnd` are out of
+  scope and MUST NOT be added here — presence is a lean signal in this build.
+- Paired with an accessible label (`aria-label` or adjacent text) — presence is
+  never conveyed by colour alone.
+- Dot colour: moss for online, faint ink for offline. The online pulse (see
+  `_shared.css`) is gated by `prefers-reduced-motion`.
+
+---
+
 ## Accessibility baselines
 
 - All interactive elements reach a ≥3:1 contrast at their lowest state and

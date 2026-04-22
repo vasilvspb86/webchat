@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Admin · Pending invitations · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <link rel="stylesheet" href="./_messaging.css">
+  <style>
+    .ep-modal.ep-modal--admin { width: min(100%, 880px); height: min(100%, 640px); }
+    .ep-modal--admin .ep-modal__body { padding: 0; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+
+    .admin-pane {
+      padding: var(--space-7) var(--space-8);
+      display: grid; gap: var(--space-5);
+      overflow-y: auto;
+    }
+    .admin-pane__bar {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+      padding-bottom: var(--space-4);
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+    }
+    .admin-pane__bar .ep-muted { max-width: 52ch; }
+
+    /* Tighter modal-body padding for the invites list */
+    .admin-pane .ep-invites { gap: var(--space-2); }
+
+    .swatch {
+      position: fixed; top: var(--space-5); right: var(--space-5);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono); font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+    .bg-room {
+      position: absolute; inset: 0;
+      background: var(--atmosphere-warm);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 09 · admin modal · pending invitations tab</div>
+
+<div class="bg-room" aria-hidden="true"></div>
+
+<div class="ep-modal-root" role="dialog" aria-modal="true" aria-labelledby="m-admin-inv-title">
+  <div class="ep-modal-scrim" tabindex="-1"></div>
+
+  <div class="ep-modal ep-modal--admin">
+
+    <header class="ep-modal__head" style="padding-bottom:var(--space-4);">
+      <div class="ep-modal__head-text">
+        <span class="ep-eyebrow">Coffee corner · admin</span>
+        <h2 class="ep-headline" id="m-admin-inv-title">Pending invitations</h2>
+      </div>
+      <button class="ep-btn ep-btn--icon" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+
+    <div class="ep-modal__body">
+
+      <nav class="ep-tabs" role="tablist">
+        <button class="ep-tabs__tab" role="tab" aria-selected="false">
+          Members <span class="ep-mono ep-tabs__count">142</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab" aria-selected="false">
+          Admins <span class="ep-mono ep-tabs__count">3</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab" aria-selected="false">
+          Banned <span class="ep-mono ep-tabs__count">2</span>
+        </button>
+        <button class="ep-tabs__tab ep-is-active" role="tab" aria-selected="true">
+          Invitations <span class="ep-mono ep-tabs__count">3</span>
+        </button>
+        <button class="ep-tabs__tab" role="tab" aria-selected="false">Settings</button>
+      </nav>
+
+      <!-- Active panel: Pending invitations -->
+      <section class="admin-pane" role="tabpanel" aria-label="Pending invitations">
+
+        <div class="admin-pane__bar">
+          <span class="ep-muted ep-body">
+            Seven-day tokens. Revoke any that haven't been accepted — the link stops working immediately.
+          </span>
+          <button class="ep-btn ep-btn--primary ep-btn--sm">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 7h10M7 2v10"/></svg>
+            New invitation
+          </button>
+        </div>
+
+        <ul class="ep-invites" role="list">
+
+          <!-- Fresh: 6 days left -->
+          <li class="ep-invite-row">
+            <span class="ep-avatar ep-avatar--md" data-tint="moss" aria-hidden="true">T</span>
+            <span class="ep-invite-row__name">
+              <strong>@theo</strong>
+              <span class="ep-mono">issued Apr 21 · 2026</span>
+            </span>
+            <span class="ep-invite-expiry" data-state="fresh" aria-label="Expires in 6 days">
+              <svg class="ep-invite-expiry__svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <circle cx="6" cy="6" r="4.5"/>
+                <path d="M6 3.5V6l1.6 1.6"/>
+              </svg>
+              <span>6 days left</span>
+              <span class="ep-invite-expiry__sender">· by @victoria</span>
+            </span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Revoke</button>
+          </li>
+
+          <!-- Expiring: < 24h, gold accent -->
+          <li class="ep-invite-row">
+            <span class="ep-avatar ep-avatar--md" data-tint="gold" aria-hidden="true">R</span>
+            <span class="ep-invite-row__name">
+              <strong>@rumi</strong>
+              <span class="ep-mono">issued Apr 15 · 2026</span>
+            </span>
+            <span class="ep-invite-expiry" data-state="soon" aria-label="Expires in under 24 hours">
+              <svg class="ep-invite-expiry__svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <circle cx="6" cy="6" r="4.5"/>
+                <path d="M6 3.5V6l1.6 1.6"/>
+              </svg>
+              <span>under 24h</span>
+              <span class="ep-invite-expiry__sender">· by @victoria</span>
+            </span>
+            <button class="ep-btn ep-btn--gold ep-btn--sm">Revoke</button>
+          </li>
+
+          <!-- Issued by another admin -->
+          <li class="ep-invite-row">
+            <span class="ep-avatar ep-avatar--md" data-tint="tide" aria-hidden="true">N</span>
+            <span class="ep-invite-row__name">
+              <strong>@nadia</strong>
+              <span class="ep-mono">issued Apr 20 · 2026</span>
+            </span>
+            <span class="ep-invite-expiry" data-state="fresh" aria-label="Expires in 5 days">
+              <svg class="ep-invite-expiry__svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <circle cx="6" cy="6" r="4.5"/>
+                <path d="M6 3.5V6l1.6 1.6"/>
+              </svg>
+              <span>5 days left</span>
+              <span class="ep-invite-expiry__sender">· by @marco (admin)</span>
+            </span>
+            <button class="ep-btn ep-btn--ghost ep-btn--sm">Revoke</button>
+          </li>
+
+        </ul>
+
+      </section>
+
+    </div>
+
+    <footer class="ep-modal__foot">
+      <span class="ep-muted ep-body" style="margin-right:auto;font-size:var(--text-xs);">
+        Revoking emits <span class="ep-mono">invitation_revoked</span> to the recipient instantly.
+      </span>
+      <button class="ep-btn ep-btn--ghost">Close</button>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>
