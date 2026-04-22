@@ -19,6 +19,7 @@ app.component('room-page', {
     const status = ref('ok') // 'ok' | 'notfound' | 'error'
     const showAdmin = ref(false)
     const flash = ref('')
+    const replyDraft = ref(null)
 
     const socket = useSocket()
     const unsubs = []
@@ -103,6 +104,16 @@ app.component('room-page', {
     }
     const onRoomUpdated = (fields) => { if (room.value && fields) room.value = { ...room.value, ...fields } }
     const onRoomDeleted = () => { setFlash('This room was deleted.'); emit('navigate', '#/rooms') }
+
+    // ── Messaging wiring ──
+    const onReply = (m) => { replyDraft.value = m ? { id: m.id, author: m.author, content: m.content } : null }
+    const cancelReply = () => { replyDraft.value = null }
+    const onSend = ({ content, replyToId }) => {
+      socket.raw?.emit('send_message', { roomId: props.roomId, content, replyToId: replyToId ?? null })
+      replyDraft.value = null
+    }
+    const onTypingStart = () => socket.raw?.emit('typing_start', { roomId: props.roomId })
+    const onTypingStop  = () => socket.raw?.emit('typing_stop',  { roomId: props.roomId })
     const goRooms = () => emit('navigate', '#/rooms')
     const goInvitations = () => emit('navigate', '#/invitations')
     const retry = () => load()
@@ -135,10 +146,12 @@ app.component('room-page', {
 
     return {
       room, members, me, loading, status, showAdmin, flash,
+      replyDraft,
       role, isAdminOrOwner, isNonOwner,
       memberCount, onlineCount, openedLabel, visibilityLabel, visibilityChipClass,
       youChipLabel, youChipClass, adminCount,
       onManage, onLeave, onRoomUpdated, onRoomDeleted, goRooms, goInvitations, retry,
+      onReply, cancelReply, onSend, onTypingStart, onTypingStop,
     }
   },
   template: `
@@ -240,11 +253,21 @@ app.component('room-page', {
             </div>
           </header>
 
-          <div class="ep-stage ep-stage--empty stage-placeholder" aria-label="Messages area">
-            <div class="ep-empty__art" aria-hidden="true">&amp;</div>
-            <p class="ep-eyebrow ep-eyebrow--quiet">Messaging shell</p>
-            <p class="ep-headline ep-headline--sm" style="color:var(--text-muted);">The room is ready.</p>
-            <p class="ep-stage__note">Message UI is owned by a separate sub-project. This shell exists to host it.</p>
+          <div class="ep-stage" style="display:flex; flex-direction:column; min-height:0; flex:1;" aria-label="Messages area">
+            <message-list
+              :room-id="roomId"
+              :role="role"
+              :me-id="me?.id"
+              @reply="onReply"
+            />
+            <message-composer
+              :room-id="roomId"
+              :reply-draft="replyDraft"
+              @send="onSend"
+              @typing-start="onTypingStart"
+              @typing-stop="onTypingStop"
+              @cancel-reply="cancelReply"
+            />
           </div>
         </section>
 
