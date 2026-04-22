@@ -1,6 +1,7 @@
 import { MessageError } from './messageErrors.js'
 import { validateMessageContent } from '../utils/validate.js'
 import { resolveRole } from './roomAuthorization.js'
+import { canEditMessage } from './messageAuthorization.js'
 
 const REPLY_PREVIEW_SELECT = {
   id: true,
@@ -67,4 +68,22 @@ export async function listMessages(prisma, userId, roomId, { before = null, limi
   const page = hasMore ? rows.slice(0, limit) : rows
   const nextCursor = hasMore ? page[page.length - 1].id : null
   return { messages: page.reverse(), nextCursor }
+}
+
+export async function editMessage(prisma, userId, messageId, { content }) {
+  const contentErr = validateMessageContent(content)
+  if (contentErr) throw new MessageError('INVALID_CONTENT', contentErr)
+
+  const message = await prisma.message.findUnique({ where: { id: messageId } })
+  if (!message || message.deleted) throw new MessageError('NOT_FOUND', 'Message not found')
+  if (!canEditMessage(userId, message)) throw new MessageError('FORBIDDEN', 'Can only edit your own messages')
+
+  return prisma.message.update({
+    where: { id: messageId },
+    data: { content: content.trim(), edited: true },
+    include: {
+      author:  { select: { id: true, username: true } },
+      replyTo: { select: REPLY_PREVIEW_SELECT },
+    },
+  })
 }
