@@ -1,0 +1,301 @@
+/* ==========================================================================
+   AuthShell — the hearth where sign-in, register, forgot, and reset live.
+   Dark warm atmosphere behind a single editorial card.
+   ========================================================================== */
+
+.ep-auth-shell {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  background: var(--atmosphere-warm);
+  background-attachment: fixed;
+  isolation: isolate;
+}
+
+.ep-auth-shell::before,
+.ep-auth-shell::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+}
+.ep-auth-shell::before {
+  inset: 0;
+  background-image: var(--noise-layer);
+  mix-blend-mode: soft-light;
+  opacity: 0.55;
+}
+/* A soft ember glow drifts up from below the card */
+.ep-auth-shell::after {
+  left: 50%;
+  bottom: -120px;
+  transform: translateX(-50%);
+  width: 760px;
+  height: 320px;
+  background:
+    radial-gradient(closest-side, var(--accent-primary-veil), transparent 70%);
+  filter: blur(8px);
+  opacity: 0.7;
+}
+
+/* ── Top brandmark ──────────────────────────────────────────────────────── */
+
+.ep-auth-shell__top {
+  display: flex;
+  justify-content: center;
+}
+.ep-auth-shell__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: var(--text-primary);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  transition: color var(--dur-quick), background var(--dur-quick);
+}
+.ep-auth-shell__brand:hover { background: color-mix(in oklab, var(--surface-raised) 60%, transparent); }
+.ep-auth-shell__brand:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.ep-auth-shell__spark {
+  color: var(--accent-primary-hi);
+  filter: drop-shadow(0 0 8px var(--accent-primary-veil));
+  display: inline-flex;
+  animation: ep-auth-spark 3.6s ease-in-out infinite;
+}
+.ep-auth-shell__wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  font-variation-settings: 'opsz' 36, 'SOFT' 80, 'WONK' 1;
+  letter-spacing: var(--tracking-tight);
+}
+.ep-auth-shell__wordmark em {
+  font-style: italic;
+  color: var(--accent-primary);
+}
+
+@keyframes ep-auth-spark {
+  0%, 100% { transform: translateY(0) rotate(0); opacity: 0.92; }
+  50%      { transform: translateY(-1px) rotate(-2deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ep-auth-shell__spark { animation: none; }
+}
+
+/* ── Main / card ────────────────────────────────────────────────────────── */
+
+.ep-auth-shell__main {
+  display: grid;
+  place-items: start center;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+}
+
+.ep-auth-card {
+  position: relative;
+  width: min(100%, 460px);
+  background: var(--surface-floating);
+  border: var(--stroke-hair) solid var(--edge-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-9);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: var(--space-8);
+  isolation: isolate;
+}
+.ep-auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 260px; height: 160px;
+  background: radial-gradient(180px 160px at 0 0, var(--accent-primary-veil), transparent 70%);
+  pointer-events: none;
+  border-top-left-radius: var(--radius-xl);
+  opacity: 0.75;
+  z-index: -1;
+}
+.ep-auth-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 180px; height: 120px;
+  background: radial-gradient(140px 120px at 100% 100%, var(--accent-gold-veil), transparent 70%);
+  pointer-events: none;
+  border-bottom-right-radius: var(--radius-xl);
+  opacity: 0.55;
+  z-index: -1;
+}
+
+.ep-auth-card__head { display: grid; gap: var(--space-3); }
+.ep-auth-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  font-variation-settings: 'opsz' 96, 'SOFT' 40, 'WONK' 1;
+  font-weight: var(--weight-regular);
+  margin: 0;
+}
+.ep-auth-card__title em {
+  font-style: italic;
+  color: var(--accent-primary-hi);
+  font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1;
+}
+.ep-auth-card__blurb { max-width: 42ch; }
+
+.ep-auth-card__body { display: grid; gap: var(--space-5); }
+
+.ep-auth-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: var(--stroke-hair) solid var(--edge-whisper);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.ep-auth-card__foot a {
+  color: var(--accent-primary-hi);
+  text-decoration: none;
+  font-weight: var(--weight-medium);
+  border-bottom: var(--stroke-hair) solid color-mix(in oklab, var(--accent-primary) 30%, transparent);
+  padding-bottom: 1px;
+  transition: color var(--dur-quick), border-color var(--dur-quick);
+}
+.ep-auth-card__foot a:hover {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+/* ── Forms inside the card ──────────────────────────────────────────────── */
+
+.ep-auth-form {
+  display: grid;
+  gap: var(--space-5);
+}
+.ep-auth-form__submit { justify-self: stretch; }
+
+.ep-field__label--row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.ep-auth-form__aside {
+  color: var(--accent-primary-hi);
+  text-decoration: none;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  transition: color var(--dur-quick);
+}
+.ep-auth-form__aside:hover { color: var(--accent-primary); }
+
+/* ── Checkbox (custom) ──────────────────────────────────────────────────── */
+
+.ep-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-1) 0;
+}
+.ep-checkbox__input {
+  position: absolute;
+  width: 1px; height: 1px;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ep-checkbox__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: var(--radius-sm);
+  border: var(--stroke-thin) solid var(--edge-default);
+  background: var(--surface-sunken);
+  color: transparent;
+  transition:
+    background var(--dur-quick),
+    border-color var(--dur-quick),
+    color var(--dur-quick),
+    box-shadow var(--dur-quick);
+  flex-shrink: 0;
+}
+.ep-checkbox:hover .ep-checkbox__box { border-color: var(--edge-loud); }
+.ep-checkbox__input:focus-visible + .ep-checkbox__box {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+.ep-checkbox__input:checked + .ep-checkbox__box {
+  background: linear-gradient(180deg, var(--ember-glow), var(--accent-primary));
+  border-color: var(--accent-primary-lo);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-ember-soft);
+}
+.ep-checkbox__label { line-height: var(--leading-snug); }
+
+/* ── Flash banner (auth shell uses its own, tokenized style) ────────────── */
+
+.ep-auth-flash {
+  justify-self: center;
+  max-width: min(100%, 460px);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--accent-gold) 14%, var(--surface-raised));
+  border: var(--stroke-hair) solid color-mix(in oklab, var(--accent-gold) 36%, transparent);
+  color: var(--accent-gold-hi);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-gold-soft);
+}
+.ep-auth-flash__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 10px var(--accent-gold-hi);
+  flex-shrink: 0;
+}
+
+/* ── Signature line at the bottom ───────────────────────────────────────── */
+
+.ep-auth-shell__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  color: var(--text-faint);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 36, 'SOFT' 100, 'WONK' 1;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  padding-bottom: var(--space-2);
+}
+.ep-auth-shell__mark-text {
+  color: var(--text-muted);
+  font-weight: var(--weight-regular);
+}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .ep-auth-shell { padding: var(--space-5) var(--space-4) var(--space-4); gap: var(--space-4); }
+  .ep-auth-card  { padding: var(--space-8) var(--space-6); border-radius: var(--radius-lg); }
+  .ep-auth-card__title { font-size: var(--text-3xl); }
+  .ep-auth-shell__wordmark { font-size: var(--text-lg); }
+  .ep-auth-flash { width: 100%; border-radius: var(--radius-lg); }
+}

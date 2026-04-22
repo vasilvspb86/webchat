@@ -648,6 +648,472 @@ props: {
 
 ---
 
+## Account layer
+
+These contracts extend the base system for the authentication and profile
+screens. Styles live in `public/components/auth.css` and
+`public/components/profile.css`. Mockups: `auth-login.html`,
+`auth-register.html`, `auth-forgot.html`, `auth-reset.html`, `profile.html`.
+
+**Design direction — "a conversation by firelight":** the auth shell is a
+single calm card on a warm atmospheric field. Each card carries a dual-accent
+glow (ember top-left, gold bottom-right) and sits above a radial pool of
+light. Copy leans poetic — "Come in, it's warm", "Make a place", "Lost the
+way in?", "Set a new key" — but fields and validation are plain-spoken. The
+profile reuses the app chrome (top nav from `my-rooms.html`) and treats the
+danger zone as a distinct rust-tinted panel at the bottom, separated by a
+hairline from the rest.
+
+---
+
+### AuthShell
+
+```html
+<div class="ep-auth-shell">
+  <header class="ep-auth-shell__top">
+    <a class="ep-auth-shell__brand" href="#">
+      <span class="ep-auth-shell__spark" aria-hidden="true"><svg>…flame…</svg></span>
+      <span class="ep-auth-shell__wordmark">Ember<em>&amp;</em>Pitch</span>
+    </a>
+  </header>
+
+  <!-- Optional flash (gold pill, role=status) -->
+  <div class="ep-auth-flash" role="status" aria-live="polite">
+    <span class="ep-auth-flash__dot" aria-hidden="true"></span>
+    <span>If that email exists, a reset link has been sent.</span>
+  </div>
+
+  <main class="ep-auth-shell__main">
+    <article class="ep-auth-card">
+      <header class="ep-auth-card__head">
+        <span class="ep-eyebrow">Welcome back</span>
+        <h1 class="ep-auth-card__title">Come in, it's <em>warm</em></h1>
+        <p class="ep-body ep-muted ep-auth-card__blurb">…lede…</p>
+      </header>
+      <div class="ep-auth-card__body">…slot: form…</div>
+      <footer class="ep-auth-card__foot">
+        <span class="ep-muted">New here?</span>
+        <a href="#">Make an account</a>
+      </footer>
+    </article>
+  </main>
+
+  <footer class="ep-auth-shell__mark" aria-hidden="true">
+    <span>&mdash;</span>
+    <span class="ep-auth-shell__mark-text">a conversation by firelight</span>
+    <span>&mdash;</span>
+  </footer>
+</div>
+```
+
+**Vue contract (`<AuthShell>`):**
+```ts
+props: {
+  flash?: string,              // shows gold pill above the card when truthy
+  accent?: 'ember' | 'gold',   // drives card glow tint (default 'ember')
+}
+slots: ['eyebrow', 'title', 'blurb', 'default' /* form body */, 'footer']
+emits: ['brand']               // click on the wordmark
+```
+
+- The shell is `position: fixed; inset: 0; overflow-y: auto` to escape the
+  legacy `body { overflow: hidden }` in `styles.css`.
+- `::after` on `.ep-auth-shell` paints a 760×320 radial pool of light anchored
+  bottom-center; the colour is `--accent-gold-veil` or `--accent-primary-veil`
+  depending on which view owns the page.
+- `.ep-auth-card::before` and `::after` paint the dual-accent glow — ember
+  top-left, gold bottom-right. Flip the tints per `accent` prop (forgot/reset
+  lead with gold).
+- The signature line at the bottom is purely decorative (`aria-hidden`).
+
+---
+
+### LoginPage
+
+```html
+<auth-shell :flash="flash" @brand="$emit('navigate','rooms')">
+  <template #eyebrow><span class="ep-eyebrow">Welcome back</span></template>
+  <template #title>Come in, it's <em>warm</em></template>
+  <template #blurb>Your rooms remember where you left off…</template>
+
+  <form class="ep-auth-form" @submit.prevent="submit" autocomplete="on">
+    <label class="ep-field" for="li-email">
+      <span class="ep-field__label">Email</span>
+      <input id="li-email" class="ep-field__input" type="email" v-model="form.email">
+    </label>
+    <label class="ep-field" for="li-pw">
+      <span class="ep-field__label ep-field__label--row">
+        <span>Password</span>
+        <a class="ep-auth-form__aside" href="#" @click.prevent="$emit('navigate','forgot')">Forgot password?</a>
+      </span>
+      <input id="li-pw" class="ep-field__input" type="password" v-model="form.password">
+    </label>
+    <label class="ep-checkbox">
+      <input type="checkbox" class="ep-checkbox__input" v-model="form.persistent">
+      <span class="ep-checkbox__box" aria-hidden="true"><svg>…check…</svg></span>
+      <span>Keep me signed in on this device</span>
+    </label>
+    <button type="submit" class="ep-btn ep-btn--primary ep-btn--lg ep-auth-form__submit">Sign in</button>
+  </form>
+
+  <template #footer>
+    <span class="ep-muted">New here?</span>
+    <a href="#" @click.prevent="$emit('navigate','register')">Make an account</a>
+  </template>
+</auth-shell>
+```
+
+**Vue contract (`<LoginPage>`):**
+```ts
+props: { flash?: string }
+emits: [
+  'submit',        // payload: { email, password, persistent }
+  'navigate',      // 'rooms' | 'register' | 'forgot'
+]
+```
+
+- Uses the shared `AuthShell` with `accent="ember"`.
+- Password label is two-row (`.ep-field__label--row`): label left, "Forgot
+  password?" aside right, rendered as an uppercase caps-tracked micro-link in
+  `--accent-primary-hi`.
+- `.ep-checkbox` hides the native input off-screen and paints `.ep-checkbox__box`;
+  the `:checked + .ep-checkbox__box` rule paints an ember gradient with the
+  tick SVG shown in `--text-on-accent`.
+- Parent owns authentication via `api('/login')`. Component only emits the
+  payload and clears password on failure (parent signals via `flash` prop or
+  a reset ref — see `ResetPasswordPage` note).
+
+---
+
+### RegisterPage
+
+```html
+<auth-shell :flash="flash">
+  <template #eyebrow><span class="ep-eyebrow">New account</span></template>
+  <template #title>Make a <em>place</em></template>
+  …
+  <form class="ep-auth-form" @submit.prevent="submit" autocomplete="on">
+    <label class="ep-field" for="reg-email">…email…</label>
+    <label class="ep-field" for="reg-username">
+      <span class="ep-field__label">Username</span>
+      <span class="ep-field__hint">The name you'll go by. Shown with an @ in front.</span>
+      <input id="reg-username" class="ep-field__input" type="text" v-model="form.username">
+    </label>
+    <label class="ep-field" for="reg-pw">
+      <span class="ep-field__label">Password</span>
+      <span class="ep-field__hint">At least 8 characters.</span>
+      <input id="reg-pw" class="ep-field__input" type="password" v-model="form.password">
+    </label>
+    <label class="ep-field" :class="{ 'ep-has-error': mismatch }" for="reg-confirm">
+      <span class="ep-field__label">Confirm password</span>
+      <input id="reg-confirm" class="ep-field__input" type="password"
+             v-model="form.confirmPassword" :aria-invalid="mismatch || null">
+      <span v-if="mismatch" class="ep-field__error" role="alert">Passwords don't match yet.</span>
+    </label>
+    <button type="submit" class="ep-btn ep-btn--primary ep-btn--lg ep-auth-form__submit"
+            :aria-disabled="mismatch || null" :disabled="mismatch">Create account</button>
+  </form>
+</auth-shell>
+```
+
+**Vue contract (`<RegisterPage>`):**
+```ts
+props: { flash?: string }
+emits: [
+  'submit',        // payload: { email, username, password, confirmPassword }
+  'navigate',      // 'rooms' | 'login'
+]
+computed: { mismatch: boolean }  // true only once confirm field has content
+```
+
+- Mismatch is client-side only and toggles `.ep-has-error` on the confirm
+  field; the `role="alert"` string lives beneath the input and replaces the
+  hint slot.
+- Submit button is blocked while `mismatch` is true — `:disabled` + the
+  `aria-disabled` attribute so screen readers announce the state.
+- All further validation (email shape, username rules, server-side conflict)
+  is parent-owned via `flash`.
+
+---
+
+### ForgotPasswordPage
+
+```html
+<auth-shell :flash="flash" accent="gold">
+  <template #eyebrow><span class="ep-eyebrow ep-eyebrow--gold">Reset</span></template>
+  <template #title>Lost the <em>way in?</em></template>
+  <template #blurb>Tell us your email. If an account exists, we'll send a link…</template>
+
+  <form class="ep-auth-form" @submit.prevent="submit" autocomplete="on">
+    <label class="ep-field" for="fg-email">
+      <span class="ep-field__label">Email</span>
+      <input id="fg-email" class="ep-field__input" type="email" v-model="form.email">
+    </label>
+    <button type="submit" class="ep-btn ep-btn--primary ep-btn--lg ep-auth-form__submit">
+      Send reset link
+    </button>
+  </form>
+
+  <template #footer>
+    <span class="ep-muted">Back to</span>
+    <a href="#" @click.prevent="$emit('navigate','login')">Sign in</a>
+  </template>
+</auth-shell>
+```
+
+**Vue contract (`<ForgotPasswordPage>`):**
+```ts
+props: { flash?: string }
+emits: [
+  'submit',     // payload: { email }
+  'navigate',   // 'login'
+]
+```
+
+- Uses `accent="gold"` so the card's radial glow leads with `--accent-gold-veil`
+  on the top-left corner and the eyebrow picks up `.ep-eyebrow--gold`.
+- Parent always responds with the same neutral flash copy ("If that email
+  exists, a reset link has been sent.") regardless of account existence — do
+  not branch the message based on the response.
+
+---
+
+### ResetPasswordPage
+
+```html
+<auth-shell :flash="flash" accent="gold">
+  <template #eyebrow><span class="ep-eyebrow ep-eyebrow--gold">Reset</span></template>
+  <template #title>Set a <em>new key</em></template>
+  <template #blurb>Pick something you'll remember tomorrow. Every existing session will be signed out…</template>
+
+  <form class="ep-auth-form" @submit.prevent="submit" autocomplete="off">
+    <label class="ep-field" for="rs-new">
+      <span class="ep-field__label">New password</span>
+      <span class="ep-field__hint">At least 8 characters.</span>
+      <input id="rs-new" class="ep-field__input" type="password" v-model="form.newPassword">
+    </label>
+    <label class="ep-field" :class="{ 'ep-has-error': mismatch }" for="rs-confirm">
+      <span class="ep-field__label">Confirm new password</span>
+      <input id="rs-confirm" class="ep-field__input" type="password"
+             v-model="form.confirm" :aria-invalid="mismatch || null">
+      <span v-if="mismatch" class="ep-field__error" role="alert">Passwords don't match yet.</span>
+    </label>
+    <button type="submit" class="ep-btn ep-btn--primary ep-btn--lg ep-auth-form__submit"
+            :aria-disabled="mismatch || null" :disabled="mismatch">Save new password</button>
+  </form>
+</auth-shell>
+```
+
+**Vue contract (`<ResetPasswordPage>`):**
+```ts
+props: { flash?: string, token?: string }
+emits: [
+  'submit',     // payload: { newPassword, confirm, token }
+  'navigate',   // 'login'
+]
+computed: { mismatch: boolean }
+```
+
+- Token is read from the URL (query param or hash) by the parent and passed
+  through; the component itself does not touch `location`.
+- On success, parent signs the user out of every session including the current
+  device and routes to `login` with a flash — the blurb sets this expectation
+  up front.
+
+---
+
+### ProfilePage
+
+```html
+<section class="ep-profile">
+  <header class="ep-profile-card ep-profile-identity">
+    <span class="ep-avatar ep-avatar--xl" aria-hidden="true">V</span>
+    <div class="ep-profile-identity__body">
+      <h1 class="ep-display ep-profile-identity__name">@victoria</h1>
+      <p class="ep-muted">victoria@ember-and-pitch.app</p>
+    </div>
+    <button class="ep-btn ep-btn--ghost" @click="$emit('sign-out')">Sign out</button>
+  </header>
+
+  <article class="ep-profile-card ep-profile-card--password">
+    <header class="ep-profile-card__head">
+      <span class="ep-eyebrow">Keys</span>
+      <h2 class="ep-headline">Change password</h2>
+    </header>
+    <form class="ep-auth-form" @submit.prevent="submitPassword">
+      <label class="ep-field" for="pf-current">…</label>
+      <label class="ep-field" for="pf-new">…</label>
+      <label class="ep-field" :class="{ 'ep-has-error': mismatch }" for="pf-confirm">…</label>
+      <button class="ep-btn ep-btn--primary" :disabled="mismatch">Update password</button>
+    </form>
+  </article>
+
+  <article class="ep-profile-card">
+    <header class="ep-profile-card__head">
+      <span class="ep-eyebrow">Presence</span>
+      <h2 class="ep-headline">Active sessions</h2>
+    </header>
+    <ul class="ep-session-list" v-if="sessionsSorted.length">
+      <li v-for="s in sessionsSorted" :key="s.id"
+          class="ep-session-row" :data-current="s.current || null">
+        <span class="ep-session-row__device">
+          <span class="ep-avatar ep-avatar--sm" aria-hidden="true">{{ s.initial }}</span>
+          <span>
+            <strong>{{ s.device }}</strong>
+            <span class="ep-muted">{{ s.location }}</span>
+          </span>
+        </span>
+        <time class="ep-mono ep-muted" :datetime="s.iso">{{ fmtWhen(s.iso) }}</time>
+        <button v-if="!s.current" class="ep-btn ep-btn--ghost ep-btn--sm"
+                @click="$emit('revoke', s.id)">Sign out</button>
+        <span v-else class="ep-chip ep-chip--owner">This device</span>
+      </li>
+    </ul>
+    <div v-else class="ep-session-list__empty" aria-live="polite">
+      <span aria-hidden="true">·</span>
+      <p class="ep-muted">No other sessions are open.</p>
+    </div>
+  </article>
+
+  <article class="ep-profile-card ep-danger-zone">
+    <header class="ep-profile-card__head">
+      <span class="ep-eyebrow ep-eyebrow--danger">Danger zone</span>
+      <h2 class="ep-headline">Delete account</h2>
+      <p class="ep-muted">This cannot be undone…</p>
+    </header>
+    <button class="ep-btn ep-btn--danger" @click="confirming = true">Delete my account</button>
+  </article>
+</section>
+
+<!-- Teleported confirm dialog -->
+<teleport to="body">
+  <div v-if="confirming" class="ep-modal-root" role="dialog" aria-modal="true"
+       aria-labelledby="dl-t" @keydown.esc="confirming = false">
+    <div class="ep-modal-scrim" @click="confirming = false"></div>
+    <div class="ep-modal ep-confirm ep-confirm--danger">
+      <header class="ep-modal__head"><h2 id="dl-t" class="ep-headline">Delete your account?</h2></header>
+      <div class="ep-modal__body"><p>All your rooms, messages, and sessions will be removed.</p></div>
+      <footer class="ep-modal__foot">
+        <button ref="cancelBtn" class="ep-btn ep-btn--ghost" @click="confirming = false">Keep account</button>
+        <button class="ep-btn ep-btn--danger" @click="$emit('delete-account'); confirming = false">Delete forever</button>
+      </footer>
+    </div>
+  </div>
+</teleport>
+```
+
+**Vue contract (`<ProfilePage>`):**
+```ts
+props: {
+  me: { userId, username, email },
+  sessions: Array<{
+    id: string,
+    device: string,       // parsed from UA
+    location: string?,    // e.g. "Tbilisi"
+    iso: string,          // ISO timestamp of last activity
+    current: boolean,
+    initial: string,      // single grapheme for avatar
+  }>,
+}
+emits: [
+  'change-password',   // payload: { currentPassword, newPassword, confirm }
+  'revoke',            // payload: sessionId
+  'sign-out',          // no payload
+  'delete-account',    // no payload (component already confirmed)
+  'navigate',          // target view
+]
+computed: {
+  sessionsSorted: Session[],   // current device first, then by iso desc
+  mismatch: boolean,
+}
+```
+
+- The component owns the delete-confirm dialog (teleported to `<body>`,
+  Escape-to-close, focus parked on Cancel by default). The parent MUST NOT
+  run a native `confirm()` — it already did in the legacy path and now
+  double-prompts if kept.
+- Revoking the current device's own session is handled by the parent's
+  handler: it signs out locally and routes to `login`. The component itself
+  never emits `revoke` for the current session (button replaced with the
+  "This device" chip).
+- Password change flash is surfaced via the shared top-level flash slot on
+  the app shell (same mechanism as auth); `role="status"` on the flash pill.
+- Responsive: at `< 640px` the identity header stacks (avatar above name),
+  session rows wrap device block above the time+action, sign-out action
+  button moves to its own row full-width.
+
+---
+
+### SessionRow (standalone contract)
+
+```html
+<li class="ep-session-row" data-current="true">
+  <span class="ep-session-row__device">
+    <span class="ep-avatar ep-avatar--sm" aria-hidden="true">M</span>
+    <span>
+      <strong>Macbook · Firefox</strong>
+      <span class="ep-muted">Tbilisi</span>
+    </span>
+  </span>
+  <time class="ep-mono ep-muted" datetime="2026-04-22T09:14">just now</time>
+  <span class="ep-chip ep-chip--owner">This device</span>
+</li>
+```
+
+**Vue contract (`<SessionRow>`):**
+```ts
+props: {
+  session: { id, device, location, iso, current, initial },
+}
+emits: ['revoke']   // current session never emits; button is suppressed
+```
+
+- `data-current="true"` adds an ember-tinted background and a soft
+  box-shadow — the current device is always visually primary.
+- `<time>` always carries a machine-readable `datetime` ISO attribute; the
+  human text is relative ("just now", "2 hours ago", "Apr 18").
+- Responsive stack described under `<ProfilePage>`.
+- Empty-state placeholder is a peer of the list (`.ep-session-list__empty`),
+  not a child — a dashed-border panel with a Fraunces ornament.
+
+---
+
+### DangerZone
+
+```html
+<article class="ep-profile-card ep-danger-zone">
+  <header class="ep-profile-card__head">
+    <span class="ep-eyebrow ep-eyebrow--danger">Danger zone</span>
+    <h2 class="ep-headline">Delete account</h2>
+    <p class="ep-muted">This cannot be undone. All your rooms, messages, and
+      sessions will be removed.</p>
+  </header>
+  <button class="ep-btn ep-btn--danger" @click="confirm">Delete my account</button>
+</article>
+```
+
+**Vue contract (`<DangerZone>`):**
+```ts
+props: {
+  title: string,          // e.g. "Delete account"
+  description: string,
+  ctaLabel: string,       // e.g. "Delete my account"
+}
+emits: ['confirm']        // fired after the user commits via the paired dialog
+```
+
+- Reuses the admin Settings tab's destructive treatment: rust-tinted panel
+  (`color-mix(in oklab, var(--rust) 6%, var(--surface-raised))`) separated
+  from the rest of the card flow by the usual hairline.
+- The eyebrow uses the `.ep-eyebrow--danger` variant (rust tint).
+- `DangerZone` does NOT own the confirmation UI; it is a visual shell only.
+  `ProfilePage` owns the dialog (see above) so keyboard focus and Escape can
+  be managed at the page level.
+- When used elsewhere (e.g. room deletion on Settings), pair with the
+  same teleported `.ep-modal.ep-confirm--danger` pattern.
+
+---
+
 ## Naming cheat-sheet
 
 | Prefix  | Meaning                               |

@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Profile page — Ember & Pitch.
+   Sections: identity hero, change-password card, active-sessions list,
+   danger zone, and a quiet footer nav.
+   ========================================================================== */
+
+.ep-profile {
+  padding: var(--space-10);
+  max-width: var(--content-reading);
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  gap: var(--space-8);
+}
+
+.ep-profile__flash { justify-self: start; margin-bottom: calc(var(--space-2) * -1); }
+
+.ep-profile__head { display: grid; gap: var(--space-3); }
+.ep-profile__head h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  font-variation-settings: 'opsz' 72, 'SOFT' 50, 'WONK' 1;
+  font-weight: var(--weight-regular);
+}
+.ep-profile__head h1 em {
+  font-style: italic;
+  color: var(--accent-primary-hi);
+  font-variation-settings: 'opsz' 72, 'SOFT' 100, 'WONK' 1;
+}
+
+/* ── Card used for each content section ─────────────────────────────────── */
+
+.ep-profile-card {
+  position: relative;
+  padding: var(--space-7) var(--space-8);
+  background: var(--surface-card);
+  border: var(--stroke-hair) solid var(--edge-whisper);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-6);
+  isolation: isolate;
+}
+.ep-profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 220px; height: 140px;
+  background: radial-gradient(170px 140px at 0 0, var(--accent-primary-veil), transparent 70%);
+  pointer-events: none;
+  border-top-left-radius: var(--radius-lg);
+  opacity: 0.55;
+  z-index: -1;
+}
+.ep-profile-card__head { display: grid; gap: var(--space-2); }
+
+/* ── Identity hero ──────────────────────────────────────────────────────── */
+
+.ep-profile-identity {
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-6);
+  align-items: center;
+}
+.ep-profile-identity__body { min-width: 0; display: grid; gap: var(--space-2); }
+.ep-profile-identity__name {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  font-variation-settings: 'opsz' 72, 'SOFT' 40, 'WONK' 0;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ep-profile-identity__email {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ep-avatar--xl {
+  --avatar-size: 72px;
+  border-width: var(--stroke-thin);
+  box-shadow: var(--shadow-ember-soft);
+}
+
+/* ── Password form ──────────────────────────────────────────────────────── */
+
+.ep-profile-form {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 440px;
+}
+.ep-profile-form__actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--space-2);
+}
+
+/* ── Session list ───────────────────────────────────────────────────────── */
+
+.ep-session-list {
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+}
+.ep-session-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-raised);
+  border: var(--stroke-hair) solid var(--edge-whisper);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-quick) var(--ease-standard),
+    background   var(--dur-quick) var(--ease-standard),
+    transform    var(--dur-quick) var(--ease-standard);
+}
+.ep-session-row:hover {
+  border-color: var(--edge-quiet);
+  transform: translateY(-1px);
+}
+.ep-session-row[data-current="true"] {
+  border-color: color-mix(in oklab, var(--accent-primary) 40%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--accent-primary-veil) 60%, transparent), transparent 60%),
+    var(--surface-raised);
+  box-shadow: var(--shadow-ember-soft);
+}
+.ep-session-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-float);
+  color: var(--text-muted);
+  border: var(--stroke-hair) solid var(--edge-whisper);
+  flex-shrink: 0;
+}
+.ep-session-row[data-current="true"] .ep-session-row__icon {
+  color: var(--accent-primary-hi);
+  border-color: color-mix(in oklab, var(--accent-primary) 40%, transparent);
+  background: color-mix(in oklab, var(--accent-primary) 10%, var(--bg-float));
+}
+.ep-session-row__body { min-width: 0; display: grid; gap: var(--space-2); }
+.ep-session-row__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.ep-session-row__device {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-body);
+}
+.ep-session-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  flex-wrap: wrap;
+}
+.ep-session-row__meta .ep-mono {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+.ep-session-row__dot { color: var(--edge-default); }
+.ep-session-row > button { flex-shrink: 0; }
+
+.ep-session-list__empty {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-6);
+  border: var(--stroke-hair) dashed var(--edge-whisper);
+  border-radius: var(--radius-md);
+  text-align: center;
+  justify-items: center;
+}
+.ep-session-list__ornament {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+  font-size: var(--text-xl);
+  color: var(--text-faint);
+  letter-spacing: 0.6em;
+}
+
+/* ── Danger zone ────────────────────────────────────────────────────────── */
+
+.ep-danger-zone {
+  position: relative;
+  padding: var(--space-7) var(--space-8);
+  border: var(--stroke-hair) solid color-mix(in oklab, var(--danger) 36%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--danger) 8%, transparent) 0%, transparent 75%),
+    var(--surface-card);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-4);
+  isolation: isolate;
+}
+.ep-danger-zone::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 220px; height: 140px;
+  background: radial-gradient(170px 140px at 0 0, var(--danger-veil), transparent 70%);
+  pointer-events: none;
+  border-top-left-radius: var(--radius-lg);
+  z-index: -1;
+}
+.ep-danger-zone__head { display: grid; gap: var(--space-2); }
+.ep-danger-zone__eyebrow { color: var(--danger-hi); }
+.ep-danger-zone__actions { margin-top: var(--space-3); }
+
+/* ── Footer nav ─────────────────────────────────────────────────────────── */
+
+.ep-profile-footnav {
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  padding-top: var(--space-4);
+  flex-wrap: wrap;
+}
+.ep-profile-footnav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+  padding-bottom: 2px;
+  transition: color var(--dur-quick), border-color var(--dur-quick);
+}
+.ep-profile-footnav a:hover {
+  color: var(--accent-primary-hi);
+  border-bottom-color: var(--accent-primary);
+}
+.ep-profile-footnav__sep { color: var(--text-faint); }
+
+/* ── Confirm modal accent (danger-tinted variant) ───────────────────────── */
+
+.ep-confirm .ep-modal__head {
+  border-bottom-color: color-mix(in oklab, var(--danger) 24%, transparent);
+}
+.ep-confirm .ep-modal__foot {
+  background: color-mix(in oklab, var(--danger) 4%, var(--surface-raised));
+}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .ep-profile { padding: var(--space-6) var(--space-5); gap: var(--space-7); }
+  .ep-profile-card, .ep-danger-zone { padding: var(--space-6); }
+  .ep-profile-identity {
+    grid-template-columns: auto 1fr;
+  }
+  .ep-profile-identity > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .ep-session-row { grid-template-columns: 1fr auto; }
+  .ep-session-row__icon { display: none; }
+  .ep-session-row__meta { font-size: var(--text-2xs); }
+}
