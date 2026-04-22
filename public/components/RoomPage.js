@@ -20,9 +20,6 @@ app.component('room-page', {
     const showAdmin = ref(false)
     const flash = ref('')
     const replyDraft = ref(null)
-    // Non-member shell: public room, caller has no RoomMember row.
-    // Distinguished from 'notfound' (private room / wrong id) — spec §6.5.
-    const isNonMember = ref(false)
     const joining = ref(false)
 
     const socket = useSocket()
@@ -39,6 +36,10 @@ app.component('room-page', {
     })
     const isAdminOrOwner = computed(() => role.value === 'owner' || role.value === 'admin')
     const isNonOwner = computed(() => role.value !== 'owner' && role.value !== 'none')
+    // Spec §6.5: non-members of a public room see only room info + Join CTA.
+    // Derived from role (no RoomMember row) rather than a 403 from /members,
+    // because the current backend serves /members to any reader.
+    const isNonMember = computed(() => !!(room.value?.isPublic && role.value === 'none'))
 
     const setFlash = (m) => { flash.value = m; setTimeout(() => { if (flash.value === m) flash.value = '' }, 4000) }
 
@@ -46,7 +47,6 @@ app.component('room-page', {
     const load = async () => {
       loading.value = true
       status.value = 'ok'
-      isNonMember.value = false
       try {
         const [r, auth] = await Promise.all([
           api('GET', `/api/rooms/${props.roomId}`),
@@ -58,10 +58,7 @@ app.component('room-page', {
           const ms = await api('GET', `/api/rooms/${props.roomId}/members`)
           members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
         } catch (e) {
-          // Public room + 403 from /members means caller is a non-member.
-          // Render the Join-CTA shell instead of a generic error.
           if (e?.status === 403 && room.value?.isPublic) {
-            isNonMember.value = true
             members.value = []
           } else {
             throw e
@@ -176,8 +173,8 @@ app.component('room-page', {
     return {
       room, members, me, loading, status, showAdmin, flash,
       replyDraft,
-      isNonMember, joining,
-      role, isAdminOrOwner, isNonOwner,
+      joining,
+      role, isAdminOrOwner, isNonOwner, isNonMember,
       memberCount, onlineCount, openedLabel, visibilityLabel, visibilityChipClass,
       youChipLabel, youChipClass, adminCount,
       onManage, onLeave, onRoomUpdated, onRoomDeleted, onJoin, goRooms, goInvitations, retry,
@@ -258,6 +255,10 @@ app.component('room-page', {
               <div class="room-header__stat">
                 <span class="room-header__stat-value">{{ memberCount }}</span>
                 <span class="room-header__stat-label">{{ memberCount === 1 ? 'member' : 'members' }}</span>
+              </div>
+              <div class="room-header__stat">
+                <span class="room-header__stat-value">{{ onlineCount }}</span>
+                <span class="room-header__stat-label">online</span>
               </div>
               <div class="room-header__stat" v-if="openedLabel">
                 <span class="room-header__stat-value">{{ openedLabel }}</span>
