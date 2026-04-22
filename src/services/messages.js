@@ -98,3 +98,34 @@ export async function deleteMessage(prisma, userId, messageId) {
   await prisma.message.update({ where: { id: messageId }, data: { deleted: true, content: null } })
   return { messageId, roomId: message.roomId }
 }
+
+const UNREAD_CAP = 99
+
+export async function markRead(prisma, userId, roomId, messageId) {
+  await prisma.roomMember.updateMany({
+    where: { userId, roomId },
+    data: { lastReadMessageId: messageId },
+  })
+}
+
+export async function getUnreadCount(prisma, userId, roomId) {
+  const member = await prisma.roomMember.findUnique({
+    where: { userId_roomId: { userId, roomId } },
+  })
+  if (!member) return { roomId, count: 0 }
+
+  let afterCreatedAt = null
+  if (member.lastReadMessageId) {
+    const anchor = await prisma.message.findUnique({ where: { id: member.lastReadMessageId } })
+    afterCreatedAt = anchor?.createdAt ?? null
+  }
+
+  const raw = await prisma.message.count({
+    where: {
+      roomId,
+      deleted: false,
+      ...(afterCreatedAt && { createdAt: { gt: afterCreatedAt } }),
+    },
+  })
+  return { roomId, count: Math.min(raw, UNREAD_CAP) }
+}
