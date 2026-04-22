@@ -20,6 +20,10 @@ app.component('room-page', {
     const showAdmin = ref(false)
     const flash = ref('')
     const replyDraft = ref(null)
+    // Non-member shell: public room, caller has no RoomMember row.
+    // Distinguished from 'notfound' (private room / wrong id) — spec §6.5.
+    const isNonMember = ref(false)
+    const joining = ref(false)
 
     const socket = useSocket()
     const unsubs = []
@@ -42,19 +46,44 @@ app.component('room-page', {
     const load = async () => {
       loading.value = true
       status.value = 'ok'
+      isNonMember.value = false
       try {
-        const [r, ms, auth] = await Promise.all([
+        const [r, auth] = await Promise.all([
           api('GET', `/api/rooms/${props.roomId}`),
-          api('GET', `/api/rooms/${props.roomId}/members`),
           api('GET', '/api/auth/me').catch(() => ({ user: null })),
         ])
         room.value = r?.room || r
-        members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
         me.value = auth.user || null
+        try {
+          const ms = await api('GET', `/api/rooms/${props.roomId}/members`)
+          members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
+        } catch (e) {
+          // Public room + 403 from /members means caller is a non-member.
+          // Render the Join-CTA shell instead of a generic error.
+          if (e?.status === 403 && room.value?.isPublic) {
+            isNonMember.value = true
+            members.value = []
+          } else {
+            throw e
+          }
+        }
       } catch (e) {
         status.value = e?.status === 404 ? 'notfound' : 'error'
       } finally {
         loading.value = false
+      }
+    }
+
+    const onJoin = async () => {
+      if (joining.value) return
+      joining.value = true
+      try {
+        await api('POST', `/api/rooms/${props.roomId}/join`)
+        await load()
+      } catch (e) {
+        setFlash(e?.message || 'Could not join this room')
+      } finally {
+        joining.value = false
       }
     }
 
@@ -147,10 +176,11 @@ app.component('room-page', {
     return {
       room, members, me, loading, status, showAdmin, flash,
       replyDraft,
+      isNonMember, joining,
       role, isAdminOrOwner, isNonOwner,
       memberCount, onlineCount, openedLabel, visibilityLabel, visibilityChipClass,
       youChipLabel, youChipClass, adminCount,
-      onManage, onLeave, onRoomUpdated, onRoomDeleted, goRooms, goInvitations, retry,
+      onManage, onLeave, onRoomUpdated, onRoomDeleted, onJoin, goRooms, goInvitations, retry,
       onReply, cancelReply, onSend, onTypingStart, onTypingStop,
     }
   },
@@ -205,6 +235,45 @@ app.component('room-page', {
           <p class="ep-body ep-body--lead ep-muted">The room didn't load. Give it another try.</p>
           <button class="ep-btn ep-btn--ghost" @click="retry">Try again</button>
         </div>
+      </main>
+
+      <main v-else-if="isNonMember" class="ep-app__main ep-layout-single">
+        <section class="ep-pane ep-pane--primary" style="padding:0;">
+          <header class="room-header">
+            <div class="room-header__top">
+              <div class="room-header__name">
+                <div class="room-header__crumbs">
+                  <a href="#/rooms" @click.prevent="goRooms">Rooms</a>
+                  <span class="sep">/</span>
+                  <span class="ep-muted">{{ room.name }}</span>
+                </div>
+                <div class="room-header__title">
+                  <h1 class="ep-headline">{{ room.name }}</h1>
+                  <span :class="['ep-chip', visibilityChipClass]">{{ visibilityLabel }}</span>
+                </div>
+              </div>
+            </div>
+            <p v-if="room.description" class="ep-body ep-body--lead ep-muted room-header__desc">{{ room.description }}</p>
+            <div class="room-header__stats">
+              <div class="room-header__stat">
+                <span class="room-header__stat-value">{{ memberCount }}</span>
+                <span class="room-header__stat-label">{{ memberCount === 1 ? 'member' : 'members' }}</span>
+              </div>
+              <div class="room-header__stat" v-if="openedLabel">
+                <span class="room-header__stat-value">{{ openedLabel }}</span>
+                <span class="room-header__stat-label">opened</span>
+              </div>
+            </div>
+          </header>
+          <section class="ep-empty" style="flex:1;">
+            <div class="ep-empty__art" aria-hidden="true">&amp;</div>
+            <h2 class="ep-headline">Pull up a chair.</h2>
+            <p class="ep-body ep-body--lead ep-muted">Join to read the conversation and add your voice.</p>
+            <button class="ep-btn ep-btn--primary" :disabled="joining" @click="onJoin">
+              {{ joining ? 'Joining\u2026' : 'Join this room' }}
+            </button>
+          </section>
+        </section>
       </main>
 
       <main v-else class="ep-app__main ep-layout-room">
