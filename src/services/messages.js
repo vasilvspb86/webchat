@@ -1,7 +1,7 @@
 import { MessageError } from './messageErrors.js'
 import { validateMessageContent } from '../utils/validate.js'
 import { resolveRole } from './roomAuthorization.js'
-import { canEditMessage } from './messageAuthorization.js'
+import { canEditMessage, canDeleteMessage } from './messageAuthorization.js'
 
 const REPLY_PREVIEW_SELECT = {
   id: true,
@@ -86,4 +86,15 @@ export async function editMessage(prisma, userId, messageId, { content }) {
       replyTo: { select: REPLY_PREVIEW_SELECT },
     },
   })
+}
+
+export async function deleteMessage(prisma, userId, messageId) {
+  const message = await prisma.message.findUnique({ where: { id: messageId } })
+  if (!message || message.deleted) throw new MessageError('NOT_FOUND', 'Message not found')
+
+  const { role } = await loadCallerRole(prisma, userId, message.roomId)
+  if (!canDeleteMessage(role, userId, message)) throw new MessageError('FORBIDDEN', 'Not allowed to delete this message')
+
+  await prisma.message.update({ where: { id: messageId }, data: { deleted: true, content: null } })
+  return { messageId, roomId: message.roomId }
 }
