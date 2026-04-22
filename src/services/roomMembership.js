@@ -248,3 +248,45 @@ export async function listMyRooms(prisma, userId) {
   })
   return rows
 }
+
+export async function listPendingInvitations(prisma, callerId, roomId) {
+  const { role } = await loadCtx(prisma, callerId, roomId)
+  if (role !== 'admin' && role !== 'owner') {
+    throw new RoomError('FORBIDDEN', 'Only admins can view pending invitations')
+  }
+  const rows = await prisma.notification.findMany({
+    where: {
+      type: 'ROOM_INVITE',
+      expiresAt: { gt: new Date() },
+      payload: { path: ['roomId'], equals: roomId },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+  const userIds = [...new Set(rows.map((r) => r.userId))]
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, username: true },
+  })
+  const nameById = Object.fromEntries(users.map((u) => [u.id, u.username]))
+  return rows.map((r) => ({
+    notificationId: r.id,
+    invitedUserId: r.userId,
+    invitedUsername: nameById[r.userId] ?? '(deleted)',
+    invitedByUserId: r.payload.invitedByUserId,
+    invitedByUsername: r.payload.invitedByUsername,
+    createdAt: r.createdAt,
+    expiresAt: r.expiresAt,
+  }))
+}
+
+export async function revokeInvitation(prisma, _io, callerId, roomId, notificationId) {
+  const { role } = await loadCtx(prisma, callerId, roomId)
+  if (role !== 'admin' && role !== 'owner') {
+    throw new RoomError('FORBIDDEN', 'Only admins can revoke invitations')
+  }
+  const notif = await prisma.notification.findUnique({ where: { id: notificationId } })
+  if (!notif || notif.type !== 'ROOM_INVITE' || notif.payload?.roomId !== roomId) {
+    throw new RoomError('NOT_FOUND', 'Invitation not found for this room')
+  }
+  await prisma.notification.delete({ where: { id: notificationId } })
+}
