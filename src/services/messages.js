@@ -40,3 +40,31 @@ export async function createMessage(prisma, userId, roomId, { content, replyToId
     },
   })
 }
+
+const PAGE_SIZE = 50
+
+export async function listMessages(prisma, userId, roomId, { before = null, limit = PAGE_SIZE } = {}) {
+  const { memberRow } = await loadCallerRole(prisma, userId, roomId)
+  if (!memberRow) throw new MessageError('FORBIDDEN', 'Not a member of this room')
+
+  let cursorCreatedAt = null
+  if (before) {
+    const ref = await prisma.message.findUnique({ where: { id: before } })
+    if (ref && ref.roomId === roomId) cursorCreatedAt = ref.createdAt
+  }
+
+  const rows = await prisma.message.findMany({
+    where: { roomId, ...(cursorCreatedAt && { createdAt: { lt: cursorCreatedAt } }) },
+    orderBy: { createdAt: 'desc' },
+    take: limit + 1,
+    include: {
+      author:  { select: { id: true, username: true } },
+      replyTo: { select: REPLY_PREVIEW_SELECT },
+    },
+  })
+
+  const hasMore = rows.length > limit
+  const page = hasMore ? rows.slice(0, limit) : rows
+  const nextCursor = hasMore ? page[page.length - 1].id : null
+  return { messages: page.reverse(), nextCursor }
+}
