@@ -9,6 +9,7 @@
     "dev": "nodemon src/index.js",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:unit": "vitest run src/__tests__/validate.test.js src/__tests__/validate.rooms.test.js src/__tests__/roomAuthorization.test.js src/__tests__/messageAuthorization.test.js src/__tests__/token.test.js src/__tests__/helpers/io.test.js src/__tests__/mailer.test.js src/__tests__/socket/index.test.js src/__tests__/socket/rooms.test.js",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
