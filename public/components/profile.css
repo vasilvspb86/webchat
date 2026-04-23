@@ -4,14 +4,10 @@
    danger zone, and a quiet footer nav.
    ========================================================================== */
 
-/* Legacy styles.css pins body { height: 100vh; overflow: hidden } for the
-   chat layout. Profile needs to scroll, so we give its root wrapper its
-   own scroll box — scoped via :has() so rooms views keep their fixed
-   height + internal scroll panels. */
-.ep-app-root:has(> .ep-profile) {
-  height: 100vh;
-  overflow-y: auto;
-}
+/* Page-level scroll for profile is handled by the body unlock in
+   room-page.css (body:has(.ep-app-root.is-rooms) { overflow-y: auto }) —
+   the profile view shares the is-rooms class, so no separate container
+   is needed here. */
 
 .ep-profile {
   padding: var(--space-10);
