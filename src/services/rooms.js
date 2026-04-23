@@ -1,5 +1,6 @@
 import { RoomError } from './roomErrors.js'
 import { emitRoomEvent } from '../socket/rooms.js'
+import { isOnline } from '../socket/presence.js'
 import {
   canEditRoom,
   canDeleteRoom,
@@ -109,6 +110,7 @@ export async function listMembers(prisma, roomId) {
       userId: r.userId, username: r.user.username,
       isAdmin: r.isAdmin, isOwner: r.userId === room.ownerId,
       joinedAt: r.joinedAt,
+      online: isOnline(r.userId),
     }
     if (out.isOwner) ownerRows.push(out)
     else if (out.isAdmin) adminRows.push(out)

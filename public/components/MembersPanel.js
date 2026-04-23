@@ -17,6 +17,10 @@ app.component('members-panel', {
     roomId: { type: String, required: true },
     role: { type: String, default: 'none' }, // 'owner'|'admin'|'member'|'none'|'banned'
     members: { type: Array, required: true },
+    // Set<userId> of members whose sockets are connected right now. When
+    // absent (e.g. during initial render), treat everyone as offline —
+    // avoids the old bug of hard-coding everyone to "Online".
+    onlineIds: { type: Object, default: () => new Set() },
   },
   setup(props) {
     // Sort: owner first, then admins (alphabetical), then members (alphabetical).
@@ -28,10 +32,10 @@ app.component('members-panel', {
       })
     })
 
-    // Presence is not yet available — group everyone under "Online" for now.
-    const onlineMembers = computed(() => sorted.value)
+    const isOnline = (m) => props.onlineIds?.has?.(m.userId) ?? false
+    const onlineMembers = computed(() => sorted.value.filter(isOnline))
     const awayMembers = computed(() => [])
-    const offlineMembers = computed(() => [])
+    const offlineMembers = computed(() => sorted.value.filter((m) => !isOnline(m)))
 
     const total = computed(() => props.members.length)
     const canManage = computed(() => props.role === 'owner' || props.role === 'admin')
@@ -90,6 +94,27 @@ app.component('members-panel', {
           <div class="members__section-title">
             <span>Offline</span><span class="ep-mono">{{ offlineMembers.length }}</span>
           </div>
+          <ul class="members__list" role="list">
+            <li
+              v-for="m in offlineMembers"
+              :key="m.userId"
+              class="ep-member-row"
+              data-presence="offline"
+            >
+              <span class="ep-avatar ep-avatar--sm" :data-tint="tintFor(m.username)" aria-hidden="true">{{ avatarLetter(m) }}</span>
+              <span class="ep-member-row__name">@{{ m.username }}</span>
+              <span :class="['ep-chip', chipFor(m).cls]">{{ chipFor(m).label }}</span>
+              <span class="ep-presence-dot" data-presence="offline" aria-label="Offline"></span>
+              <button
+                v-if="canManage"
+                class="ep-btn ep-btn--icon ep-btn--sm row-menu"
+                aria-label="Member actions"
+                type="button"
+                disabled
+              >&hellip;</button>
+              <span v-else aria-hidden="true"></span>
+            </li>
+          </ul>
         </div>
 
         <p v-if="!total" class="ep-muted" style="padding: var(--space-4); font-size: var(--text-xs);">

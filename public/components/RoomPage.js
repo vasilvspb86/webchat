@@ -21,6 +21,10 @@ app.component('room-page', {
     const flash = ref('')
     const replyDraft = ref(null)
     const joining = ref(false)
+    // Presence: Set<userId> for currently-online members in this room.
+    // Seeded from the `online` flag on each GET /members row, then kept
+    // live via `presence_update` socket events.
+    const onlineIds = ref(new Set())
 
     const socket = useSocket()
     const unsubs = []
@@ -56,7 +60,11 @@ app.component('room-page', {
         me.value = auth.user || null
         try {
           const ms = await api('GET', `/api/rooms/${props.roomId}/members`)
-          members.value = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
+          const list = Array.isArray(ms?.members) ? ms.members : (Array.isArray(ms) ? ms : [])
+          members.value = list
+          const next = new Set()
+          for (const m of list) if (m.online) next.add(m.userId)
+          onlineIds.value = next
         } catch (e) {
           if (e?.status === 403 && room.value?.isPublic) {
             members.value = []
@@ -118,6 +126,15 @@ app.component('room-page', {
           setFlash('This room was deleted.')
           emit('navigate', '#/rooms')
         })),
+        // presence_update is a user-scoped event broadcast to every room the
+        // user belongs to — it carries no roomId, so gated() would drop it.
+        socket.on('presence_update', ({ userId, status }) => {
+          if (!userId) return
+          const next = new Set(onlineIds.value)
+          if (status === 'online') next.add(userId)
+          else next.delete(userId)
+          onlineIds.value = next
+        }),
       )
     }
     const unwireSockets = () => { while (unsubs.length) { try { unsubs.pop()() } catch {} } }
@@ -146,7 +163,10 @@ app.component('room-page', {
 
     // ── Derived ──
     const memberCount = computed(() => room.value?.memberCount ?? members.value.length)
-    const onlineCount = computed(() => members.value.length) // presence not wired yet
+    const onlineCount = computed(() => {
+      const set = onlineIds.value
+      return members.value.reduce((n, m) => n + (set.has(m.userId) ? 1 : 0), 0)
+    })
     const openedLabel = computed(() => fmtMonthYear(room.value?.createdAt))
     const visibilityLabel = computed(() => room.value?.isPublic ? 'Public' : 'Private')
     const visibilityChipClass = computed(() => room.value?.isPublic ? 'ep-chip--public' : 'ep-chip--private')
@@ -174,6 +194,7 @@ app.component('room-page', {
       room, members, me, loading, status, showAdmin, flash,
       replyDraft,
       joining,
+      onlineIds,
       role, isAdminOrOwner, isNonOwner, isNonMember,
       memberCount, onlineCount, openedLabel, visibilityLabel, visibilityChipClass,
       youChipLabel, youChipClass, adminCount,
@@ -342,7 +363,7 @@ app.component('room-page', {
           </div>
         </section>
 
-        <members-panel :room-id="roomId" :role="role" :members="members" />
+        <members-panel :room-id="roomId" :role="role" :members="members" :online-ids="onlineIds" />
       </main>
 
       <admin-modal
