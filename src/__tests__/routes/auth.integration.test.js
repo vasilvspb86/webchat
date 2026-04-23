@@ -155,12 +155,12 @@ describe('POST /api/auth/change-password', () => {
 
 describe('sessions list + revoke', () => {
   it('lists own sessions; revoke current logs out; 404 on foreign sid', async () => {
-    const a = request.agent(app)
-    const b = request.agent(app)
+    const a = request.agent(app).set('User-Agent', 'device-A')
+    const b = request.agent(app).set('User-Agent', 'device-B')
     await a.post('/api/auth/register').send(REG)
     await b.post('/api/auth/login').send({ email: 'a@b.c', password: 'pw1234' })
 
-    const list = await a.get('/api/auth/sessions'); expect(list.status).toBe(200)
+    const list = await a.get('/api/auth/sessions').set('User-Agent', 'device-A'); expect(list.status).toBe(200)
     const sessions = list.body.sessions
     expect(sessions.length).toBeGreaterThanOrEqual(2)
     const current = sessions.find(s => s.isCurrent)

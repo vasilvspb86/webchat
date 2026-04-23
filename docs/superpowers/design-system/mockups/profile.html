@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Profile · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <link rel="stylesheet" href="./_messaging.css">
+  <style>
+    /* ── Profile page layout ──────────────────────────────────────────── */
+    .ep-app__main { min-height: auto; padding: var(--space-6) 0 var(--space-10); }
+
+    .ep-profile {
+      padding: var(--space-10);
+      max-width: var(--content-reading);
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      gap: var(--space-8);
+    }
+    .ep-profile__head { display: grid; gap: var(--space-3); }
+    .ep-profile__head h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      color: var(--text-primary);
+      font-variation-settings: 'opsz' 72, 'SOFT' 50, 'WONK' 1;
+      font-weight: var(--weight-regular);
+    }
+    .ep-profile__head h1 em {
+      font-style: italic;
+      color: var(--accent-primary-hi);
+      font-variation-settings: 'opsz' 72, 'SOFT' 100, 'WONK' 1;
+    }
+
+    .ep-profile-card {
+      position: relative;
+      padding: var(--space-7) var(--space-8);
+      background: var(--surface-card);
+      border: var(--stroke-hair) solid var(--edge-whisper);
+      border-radius: var(--radius-lg);
+      display: grid;
+      gap: var(--space-6);
+      isolation: isolate;
+    }
+    .ep-profile-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 220px; height: 140px;
+      background: radial-gradient(170px 140px at 0 0, var(--accent-primary-veil), transparent 70%);
+      pointer-events: none;
+      border-top-left-radius: var(--radius-lg);
+      opacity: 0.55; z-index: -1;
+    }
+    .ep-profile-card__head { display: grid; gap: var(--space-2); }
+
+    .ep-profile-identity {
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-6);
+      align-items: center;
+    }
+    .ep-profile-identity__body { min-width: 0; display: grid; gap: var(--space-2); }
+    .ep-profile-identity__name {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      font-weight: var(--weight-semibold);
+      color: var(--text-primary);
+      font-variation-settings: 'opsz' 72, 'SOFT' 40, 'WONK' 0;
+      letter-spacing: var(--tracking-tight);
+      line-height: 1;
+    }
+    .ep-profile-identity__email { color: var(--text-muted); font-size: var(--text-sm); }
+    .ep-avatar--xl {
+      --avatar-size: 72px;
+      border-width: var(--stroke-thin);
+      box-shadow: var(--shadow-ember-soft);
+    }
+
+    .ep-profile-form { display: grid; gap: var(--space-5); max-width: 440px; }
+    .ep-profile-form__actions { display: flex; justify-content: flex-start; margin-top: var(--space-2); }
+
+    .ep-session-list { list-style: none; display: grid; gap: var(--space-3); margin: 0; padding: 0; }
+    .ep-session-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-5);
+      align-items: center;
+      padding: var(--space-5) var(--space-6);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) solid var(--edge-whisper);
+      border-radius: var(--radius-md);
+    }
+    .ep-session-row[data-current="true"] {
+      border-color: color-mix(in oklab, var(--accent-primary) 40%, transparent);
+      background:
+        linear-gradient(180deg, color-mix(in oklab, var(--accent-primary-veil) 60%, transparent), transparent 60%),
+        var(--surface-raised);
+      box-shadow: var(--shadow-ember-soft);
+    }
+    .ep-session-row__icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--bg-float);
+      color: var(--text-muted);
+      border: var(--stroke-hair) solid var(--edge-whisper);
+    }
+    .ep-session-row[data-current="true"] .ep-session-row__icon {
+      color: var(--accent-primary-hi);
+      border-color: color-mix(in oklab, var(--accent-primary) 40%, transparent);
+      background: color-mix(in oklab, var(--accent-primary) 10%, var(--bg-float));
+    }
+    .ep-session-row__body { min-width: 0; display: grid; gap: var(--space-2); }
+    .ep-session-row__head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .ep-session-row__device {
+      font-family: var(--font-body);
+      font-size: var(--text-md);
+      font-weight: var(--weight-semibold);
+      color: var(--text-primary);
+    }
+    .ep-session-row__meta {
+      display: flex; align-items: center; gap: var(--space-3);
+      color: var(--text-faint); font-size: var(--text-xs); flex-wrap: wrap;
+    }
+    .ep-session-row__meta .ep-mono { color: var(--text-muted); font-size: var(--text-2xs); }
+    .ep-session-row__dot { color: var(--edge-default); }
+
+    .ep-session-list__empty {
+      display: grid; gap: var(--space-4);
+      padding: var(--space-8) var(--space-6);
+      border: var(--stroke-hair) dashed var(--edge-whisper);
+      border-radius: var(--radius-md);
+      text-align: center; justify-items: center;
+    }
+    .ep-session-list__ornament {
+      font-family: var(--font-display);
+      font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+      font-size: var(--text-xl);
+      color: var(--text-faint);
+      letter-spacing: 0.6em;
+    }
+
+    .ep-danger-zone {
+      position: relative;
+      padding: var(--space-7) var(--space-8);
+      border: var(--stroke-hair) solid color-mix(in oklab, var(--danger) 36%, transparent);
+      background:
+        linear-gradient(180deg, color-mix(in oklab, var(--danger) 8%, transparent) 0%, transparent 75%),
+        var(--surface-card);
+      border-radius: var(--radius-lg);
+      display: grid; gap: var(--space-4);
+      isolation: isolate;
+    }
+    .ep-danger-zone::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 220px; height: 140px;
+      background: radial-gradient(170px 140px at 0 0, var(--danger-veil), transparent 70%);
+      pointer-events: none;
+      border-top-left-radius: var(--radius-lg);
+      z-index: -1;
+    }
+    .ep-danger-zone__head { display: grid; gap: var(--space-2); }
+    .ep-danger-zone__eyebrow { color: var(--danger-hi); }
+
+    .ep-profile-footnav {
+      text-align: center;
+      color: var(--text-muted);
+      display: flex; justify-content: center; gap: var(--space-4);
+      font-size: var(--text-sm);
+      padding-top: var(--space-4);
+    }
+    .ep-profile-footnav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: var(--stroke-hair) solid var(--edge-whisper);
+      padding-bottom: 2px;
+    }
+    .ep-profile-footnav__sep { color: var(--text-faint); }
+
+    /* ── Stage labels ─────────────────────────────────────────────────── */
+    .stage-label {
+      max-width: var(--content-reading);
+      margin: var(--space-8) auto var(--space-3);
+      padding: 0 var(--space-10);
+      display: flex; align-items: baseline; gap: var(--space-3);
+      color: var(--text-muted);
+    }
+    .stage-label__chip {
+      display: inline-flex; align-items: center;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-pill);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+    }
+    .stage-label__what {
+      font-family: var(--font-display);
+      font-style: italic;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      font-variation-settings: 'opsz' 36, 'SOFT' 100, 'WONK' 0;
+    }
+
+    .stage-flash {
+      max-width: var(--content-reading);
+      margin: 0 auto var(--space-3);
+      padding: 0 var(--space-10);
+    }
+    .stage-flash__inner {
+      display: inline-flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklab, var(--accent-gold) 14%, var(--surface-raised));
+      border: var(--stroke-hair) solid color-mix(in oklab, var(--accent-gold) 36%, transparent);
+      color: var(--accent-gold-hi);
+      font-size: var(--text-sm);
+      box-shadow: var(--shadow-gold-soft);
+    }
+    .stage-flash__dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-gold);
+      box-shadow: 0 0 10px var(--accent-gold-hi);
+    }
+
+    .stage-divider {
+      height: 1px;
+      max-width: var(--content-reading);
+      margin: var(--space-10) auto;
+      background: linear-gradient(90deg, transparent, var(--edge-default), transparent);
+    }
+
+    .swatch {
+      position: fixed;
+      top: calc(var(--nav-h) + var(--space-4));
+      right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 10 · profile · three states</div>
+
+<!-- ════════════════ STAGE 1 · POPULATED ════════════════════════════════ -->
+
+<div class="stage-label">
+  <span class="stage-label__chip">stage 1</span>
+  <span class="stage-label__what">populated — three sessions, this device highlighted</span>
+</div>
+
+<div class="ep-app">
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user" aria-current="page">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+    <section class="ep-pane" style="padding:0;">
+      <div class="ep-profile">
+
+        <header class="ep-profile__head">
+          <span class="ep-eyebrow">Your account</span>
+          <h1>Tending your <em>own thread</em></h1>
+          <p class="ep-body ep-body--lead ep-muted" style="max-width: 60ch;">
+            The devices you've trusted, the key you use, and the last door before you leave.
+          </p>
+        </header>
+
+        <section class="ep-profile-card ep-profile-identity" aria-labelledby="id-1">
+          <span class="ep-avatar ep-avatar--xl" data-tint="ember" aria-hidden="true">V</span>
+          <div class="ep-profile-identity__body">
+            <h2 class="ep-profile-identity__name" id="id-1">@victoria</h2>
+            <p class="ep-profile-identity__email ep-mono">victoria@ember-and-pitch.app</p>
+          </div>
+          <button class="ep-btn ep-btn--ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 10v1.5a1 1 0 01-1 1H2.5a1 1 0 01-1-1v-9a1 1 0 011-1h5a1 1 0 011 1V4"/><path d="M5.5 7h7M10 4.5L12.5 7 10 9.5"/></svg>
+            Sign out
+          </button>
+        </section>
+
+        <section class="ep-profile-card" aria-labelledby="pw-1">
+          <header class="ep-profile-card__head">
+            <span class="ep-eyebrow ep-eyebrow--gold">Credential</span>
+            <h2 class="ep-headline" id="pw-1">Change password</h2>
+            <p class="ep-muted ep-body">Changing your password signs every other session out but leaves this one alone.</p>
+          </header>
+          <form class="ep-profile-form" onsubmit="return false;" autocomplete="off">
+            <label class="ep-field" for="pw1-cur">
+              <span class="ep-field__label">Current password</span>
+              <input id="pw1-cur" class="ep-field__input" type="password" value="••••••••••">
+            </label>
+            <label class="ep-field" for="pw1-new">
+              <span class="ep-field__label">New password</span>
+              <span class="ep-field__hint">At least 8 characters. A passphrase is kinder than a pattern.</span>
+              <input id="pw1-new" class="ep-field__input" type="password" value="">
+            </label>
+            <div class="ep-profile-form__actions">
+              <button type="submit" class="ep-btn ep-btn--primary">Update password</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="ep-profile-card" aria-labelledby="ses-1">
+          <header class="ep-profile-card__head">
+            <span class="ep-eyebrow ep-eyebrow--info">Devices</span>
+            <h2 class="ep-headline" id="ses-1">Active sessions</h2>
+            <p class="ep-muted ep-body">One entry for every device that can read your messages. Revoke anything that doesn't look familiar.</p>
+          </header>
+
+          <ul class="ep-session-list">
+
+            <li class="ep-session-row" data-current="true">
+              <span class="ep-session-row__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M7 21h10M12 17v4"/></svg>
+              </span>
+              <div class="ep-session-row__body">
+                <div class="ep-session-row__head">
+                  <span class="ep-session-row__device">Chrome on macOS</span>
+                  <span class="ep-chip ep-chip--admin" role="status">This device</span>
+                </div>
+                <div class="ep-session-row__meta">
+                  <time class="ep-mono" datetime="2026-04-22T08:40">Opened Apr 22, 08:40</time>
+                  <span class="ep-session-row__dot" aria-hidden="true">·</span>
+                  <span class="ep-mono">192.168.1.42</span>
+                </div>
+              </div>
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" type="button">Revoke</button>
+            </li>
+
+            <li class="ep-session-row">
+              <span class="ep-session-row__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+              </span>
+              <div class="ep-session-row__body">
+                <div class="ep-session-row__head">
+                  <span class="ep-session-row__device">Safari on iOS</span>
+                </div>
+                <div class="ep-session-row__meta">
+                  <time class="ep-mono" datetime="2026-04-19T21:12">Opened Apr 19, 21:12</time>
+                  <span class="ep-session-row__dot" aria-hidden="true">·</span>
+                  <span class="ep-mono">81.24.203.9</span>
+                </div>
+              </div>
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" type="button">Revoke</button>
+            </li>
+
+            <li class="ep-session-row">
+              <span class="ep-session-row__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M7 21h10M12 17v4"/></svg>
+              </span>
+              <div class="ep-session-row__body">
+                <div class="ep-session-row__head">
+                  <span class="ep-session-row__device">Firefox on Linux</span>
+                </div>
+                <div class="ep-session-row__meta">
+                  <time class="ep-mono" datetime="2026-04-10T14:05">Opened Apr 10, 14:05</time>
+                  <span class="ep-session-row__dot" aria-hidden="true">·</span>
+                  <span class="ep-mono">10.0.0.7</span>
+                </div>
+              </div>
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" type="button">Revoke</button>
+            </li>
+
+          </ul>
+        </section>
+
+        <section class="ep-danger-zone" aria-labelledby="dz-1">
+          <header class="ep-danger-zone__head">
+            <span class="ep-eyebrow ep-danger-zone__eyebrow">Danger zone</span>
+            <h2 class="ep-headline" id="dz-1">Delete account</h2>
+          </header>
+          <p class="ep-body">
+            Your owned rooms, messages, and invitations will be permanently erased.
+            Other rooms where you're only a member will forget you ever showed up.
+            <strong>This cannot be undone.</strong>
+          </p>
+          <div>
+            <button type="button" class="ep-btn ep-btn--danger">Delete my account</button>
+          </div>
+        </section>
+
+        <nav class="ep-profile-footnav" aria-label="Other pages">
+          <a href="#">Browse rooms</a>
+          <span class="ep-profile-footnav__sep" aria-hidden="true">·</span>
+          <a href="#">Your invitations</a>
+        </nav>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="stage-divider" aria-hidden="true"></div>
+
+<!-- ════════════════ STAGE 2 · AFTER PASSWORD CHANGE ═══════════════════ -->
+
+<div class="stage-label">
+  <span class="stage-label__chip">stage 2</span>
+  <span class="stage-label__what">after successful password change — flash banner visible, other sessions revoked</span>
+</div>
+
+<div class="stage-flash">
+  <div class="stage-flash__inner" role="status">
+    <span class="stage-flash__dot" aria-hidden="true"></span>
+    <span>Password changed. Other sessions were signed out.</span>
+  </div>
+</div>
+
+<div class="ep-app">
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user" aria-current="page">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+    <section class="ep-pane" style="padding:0;">
+      <div class="ep-profile">
+
+        <header class="ep-profile__head">
+          <span class="ep-eyebrow">Your account</span>
+          <h1>Tending your <em>own thread</em></h1>
+        </header>
+
+        <section class="ep-profile-card ep-profile-identity" aria-labelledby="id-2">
+          <span class="ep-avatar ep-avatar--xl" data-tint="ember" aria-hidden="true">V</span>
+          <div class="ep-profile-identity__body">
+            <h2 class="ep-profile-identity__name" id="id-2">@victoria</h2>
+            <p class="ep-profile-identity__email ep-mono">victoria@ember-and-pitch.app</p>
+          </div>
+          <button class="ep-btn ep-btn--ghost" type="button">Sign out</button>
+        </section>
+
+        <section class="ep-profile-card" aria-labelledby="pw-2">
+          <header class="ep-profile-card__head">
+            <span class="ep-eyebrow ep-eyebrow--gold">Credential</span>
+            <h2 class="ep-headline" id="pw-2">Change password</h2>
+            <p class="ep-muted ep-body">Changing your password signs every other session out but leaves this one alone.</p>
+          </header>
+          <form class="ep-profile-form" onsubmit="return false;">
+            <label class="ep-field" for="pw2-cur">
+              <span class="ep-field__label">Current password</span>
+              <input id="pw2-cur" class="ep-field__input" type="password" value="">
+            </label>
+            <label class="ep-field" for="pw2-new">
+              <span class="ep-field__label">New password</span>
+              <span class="ep-field__hint">At least 8 characters. A passphrase is kinder than a pattern.</span>
+              <input id="pw2-new" class="ep-field__input" type="password" value="">
+            </label>
+            <div class="ep-profile-form__actions">
+              <button type="submit" class="ep-btn ep-btn--primary" aria-disabled="true" disabled>Update password</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="ep-profile-card" aria-labelledby="ses-2">
+          <header class="ep-profile-card__head">
+            <span class="ep-eyebrow ep-eyebrow--info">Devices</span>
+            <h2 class="ep-headline" id="ses-2">Active sessions</h2>
+            <p class="ep-muted ep-body">One entry for every device that can read your messages.</p>
+          </header>
+          <ul class="ep-session-list">
+            <li class="ep-session-row" data-current="true">
+              <span class="ep-session-row__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M7 21h10M12 17v4"/></svg>
+              </span>
+              <div class="ep-session-row__body">
+                <div class="ep-session-row__head">
+                  <span class="ep-session-row__device">Chrome on macOS</span>
+                  <span class="ep-chip ep-chip--admin" role="status">This device</span>
+                </div>
+                <div class="ep-session-row__meta">
+                  <time class="ep-mono" datetime="2026-04-22T08:40">Opened Apr 22, 08:40</time>
+                  <span class="ep-session-row__dot" aria-hidden="true">·</span>
+                  <span class="ep-mono">192.168.1.42</span>
+                </div>
+              </div>
+              <button class="ep-btn ep-btn--ghost ep-btn--sm" type="button">Revoke</button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="ep-danger-zone" aria-labelledby="dz-2">
+          <header class="ep-danger-zone__head">
+            <span class="ep-eyebrow ep-danger-zone__eyebrow">Danger zone</span>
+            <h2 class="ep-headline" id="dz-2">Delete account</h2>
+          </header>
+          <p class="ep-body">
+            Your owned rooms, messages, and invitations will be permanently erased.
+            <strong>This cannot be undone.</strong>
+          </p>
+          <div>
+            <button type="button" class="ep-btn ep-btn--danger">Delete my account</button>
+          </div>
+        </section>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="stage-divider" aria-hidden="true"></div>
+
+<!-- ════════════════ STAGE 3 · EMPTY SESSIONS ══════════════════════════ -->
+
+<div class="stage-label">
+  <span class="stage-label__chip">stage 3</span>
+  <span class="stage-label__what">empty-sessions edge case — none listed (unusual; should never happen)</span>
+</div>
+
+<div class="ep-app">
+  <header class="ep-app__top">
+    <div class="ep-app__brand">Ember<em>&amp;</em>Pitch</div>
+    <nav class="ep-app__nav">
+      <a href="#">Rooms</a>
+      <a href="#">My rooms</a>
+      <a href="#">Invitations</a>
+    </nav>
+    <div class="ep-app__user" aria-current="page">
+      <span class="ep-muted">@victoria</span>
+      <span class="ep-avatar ep-avatar--md" data-tint="ember" aria-hidden="true">V</span>
+    </div>
+  </header>
+
+  <main class="ep-app__main ep-layout-single">
+    <section class="ep-pane" style="padding:0;">
+      <div class="ep-profile">
+
+        <header class="ep-profile__head">
+          <span class="ep-eyebrow">Your account</span>
+          <h1>Tending your <em>own thread</em></h1>
+        </header>
+
+        <section class="ep-profile-card ep-profile-identity" aria-labelledby="id-3">
+          <span class="ep-avatar ep-avatar--xl" data-tint="ember" aria-hidden="true">V</span>
+          <div class="ep-profile-identity__body">
+            <h2 class="ep-profile-identity__name" id="id-3">@victoria</h2>
+            <p class="ep-profile-identity__email ep-mono">victoria@ember-and-pitch.app</p>
+          </div>
+          <button class="ep-btn ep-btn--ghost" type="button">Sign out</button>
+        </section>
+
+        <section class="ep-profile-card" aria-labelledby="ses-3">
+          <header class="ep-profile-card__head">
+            <span class="ep-eyebrow ep-eyebrow--info">Devices</span>
+            <h2 class="ep-headline" id="ses-3">Active sessions</h2>
+          </header>
+
+          <div class="ep-session-list__empty" role="status">
+            <span class="ep-session-list__ornament" aria-hidden="true">&middot; &middot; &middot;</span>
+            <p class="ep-body ep-muted">No active sessions listed. That's unusual — even this one should show up.</p>
+          </div>
+        </section>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>

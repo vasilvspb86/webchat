@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Provisions a Codespace for webchat: Postgres databases, .env, migrations, seed.
+# Provisions a Codespace for webchat.
+# Assumption: the postgresql devcontainer feature has already started Postgres
+# on localhost:5432 with trust auth (see /etc/postgresql/*/main/pg_hba.conf).
+# We connect via TCP as the 'postgres' superuser — no sudo needed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -7,9 +10,20 @@ cd "$(dirname "$0")/.."
 echo "→ installing npm deps"
 npm install --no-audit --no-fund
 
-echo "→ creating Postgres role + databases (idempotent)"
-sudo service postgresql start >/dev/null
-sudo -u postgres psql -v ON_ERROR_STOP=1 <<'SQL'
+echo "→ waiting for Postgres on localhost:5432"
+for i in {1..60}; do
+  if pg_isready -h localhost -p 5432 -t 1 >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+pg_isready -h localhost -p 5432 -t 1 >/dev/null 2>&1 || {
+  echo "Postgres did not come up in time. Try: psql -h localhost -U postgres" >&2
+  exit 1
+}
+
+echo "→ creating role + databases (idempotent)"
+psql -h localhost -U postgres -v ON_ERROR_STOP=1 <<'SQL'
 DO $$ BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'webchat') THEN
     CREATE USER webchat WITH PASSWORD 'webchat';

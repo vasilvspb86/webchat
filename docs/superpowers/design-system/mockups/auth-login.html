@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Sign in · Ember &amp; Pitch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="./_shared.css">
+  <style>
+    body { overflow: auto; }
+
+    .ep-auth-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: var(--space-6);
+      padding: var(--space-8) var(--space-6) var(--space-6);
+      isolation: isolate;
+    }
+    .ep-auth-shell::after {
+      content: '';
+      position: fixed;
+      left: 50%; bottom: -120px;
+      transform: translateX(-50%);
+      width: 760px; height: 320px;
+      background: radial-gradient(closest-side, var(--accent-primary-veil), transparent 70%);
+      filter: blur(8px);
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .ep-auth-shell__top { display: flex; justify-content: center; }
+    .ep-auth-shell__brand {
+      display: inline-flex; align-items: center; gap: var(--space-3);
+      text-decoration: none; color: var(--text-primary);
+      padding: var(--space-3) var(--space-5);
+      border-radius: var(--radius-pill);
+    }
+    .ep-auth-shell__spark { color: var(--accent-primary-hi); filter: drop-shadow(0 0 8px var(--accent-primary-veil)); display: inline-flex; }
+    .ep-auth-shell__wordmark {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--weight-semibold);
+      font-variation-settings: 'opsz' 36, 'SOFT' 80, 'WONK' 1;
+      letter-spacing: var(--tracking-tight);
+    }
+    .ep-auth-shell__wordmark em { font-style: italic; color: var(--accent-primary); }
+
+    .ep-auth-shell__main {
+      display: grid; place-items: start center;
+      padding: var(--space-4) var(--space-4) var(--space-8);
+    }
+
+    .ep-auth-card {
+      position: relative;
+      width: min(100%, 460px);
+      background: var(--surface-floating);
+      border: var(--stroke-hair) solid var(--edge-default);
+      border-radius: var(--radius-xl);
+      padding: var(--space-10) var(--space-9);
+      box-shadow: var(--shadow-lg);
+      display: grid; gap: var(--space-8);
+      isolation: isolate;
+    }
+    .ep-auth-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 260px; height: 160px;
+      background: radial-gradient(180px 160px at 0 0, var(--accent-primary-veil), transparent 70%);
+      pointer-events: none; border-top-left-radius: var(--radius-xl);
+      opacity: 0.75; z-index: -1;
+    }
+    .ep-auth-card::after {
+      content: ''; position: absolute; bottom: 0; right: 0;
+      width: 180px; height: 120px;
+      background: radial-gradient(140px 120px at 100% 100%, var(--accent-gold-veil), transparent 70%);
+      pointer-events: none; border-bottom-right-radius: var(--radius-xl);
+      opacity: 0.55; z-index: -1;
+    }
+
+    .ep-auth-card__head { display: grid; gap: var(--space-3); }
+    .ep-auth-card__title {
+      font-family: var(--font-display);
+      font-size: var(--text-4xl);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      color: var(--text-primary);
+      font-variation-settings: 'opsz' 96, 'SOFT' 40, 'WONK' 1;
+      font-weight: var(--weight-regular);
+    }
+    .ep-auth-card__title em {
+      font-style: italic; color: var(--accent-primary-hi);
+      font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1;
+    }
+    .ep-auth-card__blurb { max-width: 42ch; }
+
+    .ep-auth-card__body { display: grid; gap: var(--space-5); }
+    .ep-auth-card__foot {
+      display: flex; align-items: center; justify-content: center;
+      gap: var(--space-3); padding-top: var(--space-5);
+      border-top: var(--stroke-hair) solid var(--edge-whisper);
+      font-size: var(--text-sm); color: var(--text-muted);
+    }
+    .ep-auth-card__foot a {
+      color: var(--accent-primary-hi); text-decoration: none;
+      font-weight: var(--weight-medium);
+      border-bottom: var(--stroke-hair) solid color-mix(in oklab, var(--accent-primary) 30%, transparent);
+      padding-bottom: 1px;
+    }
+
+    .ep-auth-form { display: grid; gap: var(--space-5); }
+    .ep-auth-form__submit { justify-self: stretch; }
+
+    .ep-field__label--row {
+      display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);
+    }
+    .ep-auth-form__aside {
+      color: var(--accent-primary-hi); text-decoration: none;
+      font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-caps); text-transform: uppercase;
+    }
+
+    .ep-checkbox {
+      display: inline-flex; align-items: center; gap: var(--space-3);
+      font-size: var(--text-sm); color: var(--text-secondary);
+    }
+    .ep-checkbox__input {
+      position: absolute; width: 1px; height: 1px; clip: rect(0 0 0 0); overflow: hidden;
+    }
+    .ep-checkbox__box {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: var(--radius-sm);
+      border: var(--stroke-thin) solid var(--edge-default);
+      background: var(--surface-sunken);
+      color: transparent;
+    }
+    .ep-checkbox__input:checked + .ep-checkbox__box {
+      background: linear-gradient(180deg, var(--ember-glow), var(--accent-primary));
+      border-color: var(--accent-primary-lo);
+      color: var(--text-on-accent);
+      box-shadow: var(--shadow-ember-soft);
+    }
+
+    .ep-auth-shell__mark {
+      display: flex; align-items: center; justify-content: center;
+      gap: var(--space-4); color: var(--text-faint);
+      font-family: var(--font-display); font-style: italic;
+      font-variation-settings: 'opsz' 36, 'SOFT' 100, 'WONK' 1;
+      font-size: var(--text-xs);
+      letter-spacing: var(--tracking-wide);
+      padding-bottom: var(--space-2);
+    }
+    .ep-auth-shell__mark-text { color: var(--text-muted); }
+
+    .swatch {
+      position: fixed; top: var(--space-4); right: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-raised);
+      border: var(--stroke-hair) dashed var(--edge-default);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono); font-size: var(--text-2xs);
+      color: var(--text-muted);
+      z-index: var(--z-tooltip);
+    }
+  </style>
+</head>
+<body>
+
+<div class="swatch">screen 11 · auth · sign in</div>
+
+<div class="ep-auth-shell">
+
+  <header class="ep-auth-shell__top">
+    <a href="#" class="ep-auth-shell__brand">
+      <span class="ep-auth-shell__spark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3c1.5 2.4 3.2 3.6 3.2 6.2 0 2-1.4 3.2-3.2 3.2s-3.2-1.2-3.2-3.2C8.8 6.6 10.5 5.4 12 3z"/>
+          <path d="M7 14c0 3 2.2 6 5 6s5-3 5-6c0-1.3-.6-2.4-1.4-3.3"/>
+        </svg>
+      </span>
+      <span class="ep-auth-shell__wordmark">Ember<em>&amp;</em>Pitch</span>
+    </a>
+  </header>
+
+  <main class="ep-auth-shell__main">
+    <article class="ep-auth-card">
+      <header class="ep-auth-card__head">
+        <span class="ep-eyebrow">Welcome back</span>
+        <h1 class="ep-auth-card__title">Come in, it's <em>warm</em></h1>
+        <p class="ep-body ep-muted ep-auth-card__blurb">
+          Your rooms remember where you left off. Sign in to pick up the thread.
+        </p>
+      </header>
+
+      <div class="ep-auth-card__body">
+        <form class="ep-auth-form" onsubmit="return false;" autocomplete="on">
+          <label class="ep-field" for="li-email">
+            <span class="ep-field__label">Email</span>
+            <input id="li-email" class="ep-field__input" type="email" value="victoria@ember-and-pitch.app">
+          </label>
+
+          <label class="ep-field" for="li-pw">
+            <span class="ep-field__label ep-field__label--row">
+              <span>Password</span>
+              <a class="ep-auth-form__aside" href="#">Forgot password?</a>
+            </span>
+            <input id="li-pw" class="ep-field__input" type="password" value="••••••••">
+          </label>
+
+          <label class="ep-checkbox">
+            <input type="checkbox" class="ep-checkbox__input" checked>
+            <span class="ep-checkbox__box" aria-hidden="true">
+              <svg viewBox="0 0 12 10" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l3 3 7-7"/></svg>
+            </span>
+            <span>Keep me signed in on this device</span>
+          </label>
+
+          <button type="submit" class="ep-btn ep-btn--primary ep-btn--lg ep-auth-form__submit">Sign in</button>
+        </form>
+      </div>
+
+      <footer class="ep-auth-card__foot">
+        <span class="ep-muted">New here?</span>
+        <a href="#">Make an account</a>
+      </footer>
+    </article>
+  </main>
+
+  <footer class="ep-auth-shell__mark" aria-hidden="true">
+    <span>&mdash;</span>
+    <span class="ep-auth-shell__mark-text">a conversation by firelight</span>
+    <span>&mdash;</span>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -100,7 +100,7 @@ export async function listSessions(prisma, { userId, currentSid }) {
   const rows = await prisma.user_sessions.findMany({
     where: { expire: { gt: new Date() } },
   })
-  return rows
+  const mine = rows
     .filter((r) => r.sess?.userId === userId)
     .map((r) => ({
       sid: r.sid,
@@ -110,6 +110,28 @@ export async function listSessions(prisma, { userId, currentSid }) {
       expire: r.expire,
       isCurrent: r.sid === currentSid,
     }))
+
+  // Same device (same UA + IP) re-logins each mint a fresh sid, leaving stale
+  // rows until express-session's TTL reaps them. Collapse those into the
+  // newest row per device. The current session always claims its device group
+  // so it never hides behind a more recent-looking duplicate.
+  const ts = (s) => new Date(s.createdAt || s.expire).getTime()
+  mine.sort((a, b) => ts(b) - ts(a))
+  const seen = new Set()
+  const kept = []
+  const current = mine.find((s) => s.isCurrent)
+  if (current) {
+    kept.push(current)
+    seen.add(`${current.userAgent}\x00${current.ip}`)
+  }
+  for (const s of mine) {
+    if (s.isCurrent) continue
+    const key = `${s.userAgent}\x00${s.ip}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    kept.push(s)
+  }
+  return kept
 }
 
 export async function revokeSession(prisma, { userId, sid }) {

@@ -2,6 +2,14 @@ const connections = new Map()  // userId -> Set<socketId>
 
 export function _reset() { connections.clear() }
 
+// Live check — true iff the user has at least one active socket right now.
+// Consumed by listMembers so a fresh page load shows accurate dots without
+// waiting for the next presence_update broadcast.
+export function isOnline(userId) {
+  const set = connections.get(userId)
+  return !!(set && set.size > 0)
+}
+
 async function broadcastToUserRooms(io, userId, prisma, status) {
   const rooms = await prisma.roomMember.findMany({
     where: { userId },

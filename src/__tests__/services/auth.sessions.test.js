@@ -25,6 +25,19 @@ describe('listSessions / revokeSession', () => {
     expect(sessions.every(s => s.sid !== 'x1')).toBe(true)
   })
 
+  it('collapses same-device duplicates to the newest row, current always kept', async () => {
+    await testPrisma.user_sessions.createMany({ data: [
+      // Same UA + IP as s1 but older — should be hidden behind s1.
+      { sid: 's1-older', sess: { userId, userAgent: 'UA1', ip: '1.1.1.1', createdAt: '2025-12-01' }, expire: new Date(Date.now() + 60000) },
+      // Same UA + IP as s2, newer — s2 should collapse into this one.
+      { sid: 's2-newer', sess: { userId, userAgent: 'UA2', ip: '2.2.2.2', createdAt: '2026-01-10' }, expire: new Date(Date.now() + 60000) },
+    ]})
+    const sessions = await listSessions(testPrisma, { userId, currentSid: 's1' })
+    const sids = sessions.map((s) => s.sid).sort()
+    expect(sids).toEqual(['s1', 's2-newer'])
+    expect(sessions.find((s) => s.sid === 's1').isCurrent).toBe(true)
+  })
+
   it('revokes own session', async () => {
     await revokeSession(testPrisma, { userId, sid: 's2' })
     expect(await testPrisma.user_sessions.findUnique({ where: { sid: 's2' } })).toBeNull()

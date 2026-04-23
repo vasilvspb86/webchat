@@ -2,6 +2,17 @@
    Mirrors docs/superpowers/design-system/mockups/room-page.html
    Reusable primitives live in /design-system/components.css. */
 
+/* Legacy styles.css pins body { height: 100vh; overflow: hidden } to keep the
+   chat layout fixed. On shorter viewports the header + stats + composer can
+   exceed 100vh and the composer gets clipped. Let the page scroll when a
+   rooms/my-rooms/invitations view is active. .ep-app keeps min-height: 100vh
+   so the chat still fills the viewport on large screens. */
+body:has(.ep-app-root.is-rooms) {
+  height: auto;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
 /* ── Room header ──────────────────────────────────────────────────── */
 .room-header {
   display: grid;

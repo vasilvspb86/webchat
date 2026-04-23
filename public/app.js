@@ -29,6 +29,14 @@ export const useSocket = () => {
       return () => _handlers.get(event)?.delete(handler)
     },
     joinRoom(/* roomId */) { /* owned by messaging sub-project; broadcasts arrive anyway */ },
+    // Close the singleton so the server fires `disconnect` (presence flips the
+    // user offline for roommates). Handlers are cleared so a fresh login
+    // rebuilds them against a new socket with the new session cookie.
+    disconnect() {
+      if (_socket) { try { _socket.disconnect() } catch {} }
+      _socket = null
+      _handlers.clear()
+    },
     get raw() { return _socket },
   }
 }
@@ -72,29 +80,34 @@ export const app = createApp({
     const changeForm = ref({ currentPassword: '', newPassword: '' })
     const sessions = ref([])
 
-    const doRegister = async () => {
-      try { me.value = (await api('POST', '/api/auth/register', regForm.value)).user; navigate('/profile') }
+    const doRegister = async (payload) => {
+      const body = payload || regForm.value
+      try { me.value = (await api('POST', '/api/auth/register', body)).user; navigate('/profile') }
       catch (e) { setFlash(e.message) }
     }
-    const doLogin = async () => {
-      try { me.value = (await api('POST', '/api/auth/login', loginForm.value)).user; navigate('/profile') }
+    const doLogin = async (payload) => {
+      const body = payload || loginForm.value
+      try { me.value = (await api('POST', '/api/auth/login', body)).user; navigate('/profile') }
       catch (e) { setFlash(e.message) }
     }
     const doLogout = async () => {
-      try { await api('POST', '/api/auth/logout'); me.value = null; navigate('/login') }
+      try { await api('POST', '/api/auth/logout'); useSocket().disconnect(); me.value = null; navigate('/login') }
       catch (e) { setFlash(e.message) }
     }
-    const doForgot = async () => {
-      try { await api('POST', '/api/auth/forgot-password', forgotForm.value); setFlash('If that email exists, a reset link has been sent.') }
+    const doForgot = async (payload) => {
+      const body = payload || forgotForm.value
+      try { await api('POST', '/api/auth/forgot-password', body); setFlash('If that email exists, a reset link has been sent.') }
       catch (e) { setFlash(e.message) }
     }
-    const doReset = async () => {
-      if (resetForm.value.newPassword !== resetForm.value.confirm) return setFlash('Passwords do not match')
-      try { await api('POST', '/api/auth/reset-password', { token: route.value.token, newPassword: resetForm.value.newPassword }); setFlash('Password reset. Please sign in.'); navigate('/login') }
+    const doReset = async (payload) => {
+      const src = payload || resetForm.value
+      if (src.newPassword !== src.confirm) return setFlash('Passwords do not match')
+      try { await api('POST', '/api/auth/reset-password', { token: route.value.token, newPassword: src.newPassword }); setFlash('Password reset. Please sign in.'); navigate('/login') }
       catch (e) { setFlash(e.message) }
     }
-    const doChange = async () => {
-      try { await api('POST', '/api/auth/change-password', changeForm.value); setFlash('Password changed. Other sessions were signed out.'); changeForm.value = { currentPassword: '', newPassword: '' }; await loadSessions() }
+    const doChange = async (payload) => {
+      const body = payload || changeForm.value
+      try { await api('POST', '/api/auth/change-password', body); setFlash('Password changed. Other sessions were signed out.'); changeForm.value = { currentPassword: '', newPassword: '' }; await loadSessions() }
       catch (e) { setFlash(e.message) }
     }
     const loadSessions = async () => { sessions.value = (await api('GET', '/api/auth/sessions')).sessions }
@@ -102,12 +115,11 @@ export const app = createApp({
       try {
         await api('DELETE', `/api/auth/sessions/${sid}`)
         const s = sessions.value.find(s => s.sid === sid)
-        if (s?.isCurrent) { me.value = null; navigate('/login') } else { await loadSessions() }
+        if (s?.isCurrent) { useSocket().disconnect(); me.value = null; navigate('/login') } else { await loadSessions() }
       } catch (e) { setFlash(e.message) }
     }
     const doDelete = async () => {
-      if (!confirm('Delete your account? Your owned rooms and their messages will be permanently erased. This cannot be undone.')) return
-      try { await api('DELETE', '/api/auth/account'); me.value = null; navigate('/login') }
+      try { await api('DELETE', '/api/auth/account'); useSocket().disconnect(); me.value = null; navigate('/login') }
       catch (e) { setFlash(e.message) }
     }
 
@@ -142,98 +154,36 @@ export const app = createApp({
       doRegister, doLogin, doLogout, doForgot, doReset, doChange, revoke, doDelete, go: navigate }
   },
   template: `
-    <div :class="['ep-app-root', view.startsWith('rooms-') || view==='my-rooms' || view==='invitations' ? 'is-rooms' : 'is-auth']">
-      <div v-if="flash" class="flash" role="status" aria-live="polite">{{ flash }}</div>
-
-      <!-- Rooms sub-project views (components registered by Task 15-19 subagents) -->
+    <div :class="['ep-app-root', view.startsWith('rooms-') || view==='my-rooms' || view==='invitations' || view==='profile' ? 'is-rooms' : 'is-auth']">
+      <!-- Rooms sub-project views -->
       <room-catalog v-if="view==='rooms-catalog' || view==='rooms-new'" :show-create="view==='rooms-new'" @navigate="go"></room-catalog>
       <my-rooms-page v-else-if="view==='my-rooms'" :me="me" @navigate="go"></my-rooms-page>
       <room-page v-else-if="view==='rooms-page'" :room-id="currentRoomId" @navigate="go"></room-page>
       <invitation-inbox v-else-if="view==='invitations'" @navigate="go"></invitation-inbox>
 
-      <div v-else class="auth-wrap">
+      <!-- Profile -->
+      <profile-page v-else-if="view==='profile'"
+        :me="me" :sessions="sessions" :flash="flash"
+        @change-password="doChange"
+        @revoke="revoke"
+        @sign-out="doLogout"
+        @delete-account="doDelete"
+        @navigate="go"></profile-page>
 
-      <section v-if="view==='login'" class="card">
-        <h1>Sign in</h1>
-        <form @submit.prevent="doLogin">
-          <label>Email <input v-model="loginForm.email" type="email" required></label>
-          <label>Password <input v-model="loginForm.password" type="password" required></label>
-          <label class="inline"><input v-model="loginForm.persistent" type="checkbox"> Keep me signed in</label>
-          <button type="submit">Sign in</button>
-        </form>
-        <p><a href="#" @click.prevent="go('/register')">Create account</a> · <a href="#" @click.prevent="go('/forgot')">Forgot password?</a></p>
-      </section>
-
-      <section v-if="view==='register'" class="card">
-        <h1>Register</h1>
-        <form @submit.prevent="doRegister">
-          <label>Email <input v-model="regForm.email" type="email" required></label>
-          <label>Username <input v-model="regForm.username" required></label>
-          <label>Password <input v-model="regForm.password" type="password" required></label>
-          <label>Confirm password <input v-model="regForm.confirmPassword" type="password" required></label>
-          <button type="submit">Register</button>
-        </form>
-        <p><a href="#" @click.prevent="go('/login')">Already have an account?</a></p>
-      </section>
-
-      <section v-if="view==='forgot'" class="card">
-        <h1>Forgot password</h1>
-        <form @submit.prevent="doForgot">
-          <label>Email <input v-model="forgotForm.email" type="email" required></label>
-          <button type="submit">Send reset link</button>
-        </form>
-        <p><a href="#" @click.prevent="go('/login')">Back to sign in</a></p>
-      </section>
-
-      <section v-if="view==='reset'" class="card">
-        <h1>Set new password</h1>
-        <form @submit.prevent="doReset">
-          <label>New password <input v-model="resetForm.newPassword" type="password" required></label>
-          <label>Confirm <input v-model="resetForm.confirm" type="password" required></label>
-          <button type="submit">Reset password</button>
-        </form>
-      </section>
-
-      <section v-if="view==='profile'" class="card">
-        <h1>Profile</h1>
-        <p>Signed in as <strong>{{ me?.username }}</strong> ({{ me?.email }})</p>
-        <button @click="doLogout">Sign out</button>
-
-        <h2>Change password</h2>
-        <form @submit.prevent="doChange">
-          <label>Current password <input v-model="changeForm.currentPassword" type="password" required></label>
-          <label>New password <input v-model="changeForm.newPassword" type="password" required></label>
-          <button type="submit">Change</button>
-        </form>
-
-        <h2>Active sessions</h2>
-        <table class="sessions">
-          <thead><tr><th>Created</th><th>User-Agent</th><th>IP</th><th></th></tr></thead>
-          <tbody>
-            <tr v-for="s in sessions" :key="s.sid">
-              <td>{{ new Date(s.createdAt || s.expire).toLocaleString() }}</td>
-              <td>{{ s.userAgent }}<span v-if="s.isCurrent"> (this device)</span></td>
-              <td>{{ s.ip }}</td>
-              <td><button @click="revoke(s.sid)">Revoke</button></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2 class="danger">Danger zone</h2>
-        <button class="danger" @click="doDelete">Delete account</button>
-
-        <h2>Navigation</h2>
-        <p>
-          <a href="#/rooms" @click.prevent="go('#/rooms')">Browse rooms</a> ·
-          <a href="#/invitations" @click.prevent="go('#/invitations')">Invitations</a>
-        </p>
-      </section>
-
-      </div>
+      <!-- Auth views (Ember & Pitch skin) -->
+      <login-page v-else-if="view==='login'" :flash="flash" @submit="doLogin" @navigate="go"></login-page>
+      <register-page v-else-if="view==='register'" :flash="flash" @submit="doRegister" @navigate="go"></register-page>
+      <forgot-password-page v-else-if="view==='forgot'" :flash="flash" @submit="doForgot" @navigate="go"></forgot-password-page>
+      <reset-password-page v-else-if="view==='reset'" :flash="flash" @submit="doReset" @navigate="go"></reset-password-page>
     </div>
   `,
 })
 
-// Defer mount so component modules (RoomCatalog, RoomPage, etc.) can
-// register themselves via app.component(...) before the first render.
-queueMicrotask(() => app.mount('#app'))
+// Defer mount until ALL deferred <script type="module"> component files
+// finish evaluating — each one registers itself via app.component(...).
+// queueMicrotask fires *between* module evaluations (microtask queue
+// drains between them), so it mounts before LoginPage/AuthShell/etc.
+// register, leaving Vue to treat their tags as unknown HTML elements.
+// `load` fires after every deferred module script is done.
+if (document.readyState === 'complete') app.mount('#app')
+else window.addEventListener('load', () => app.mount('#app'), { once: true })
