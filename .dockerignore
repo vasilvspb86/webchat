@@ -1,0 +1,33 @@
+# Dependencies — rebuilt inside the image
+node_modules
+npm-debug.log*
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Local env & editor config
+.env
+.env.*
+!.env.example
+.vscode
+.idea
+.DS_Store
+
+# Build artifacts / local data
+coverage
+uploads
+traces
+*.log
+
+# Test / dev artifacts that don't belong in runtime
+docs
+claude_dialogs.md
+.claude
+.husky
+
+# Docker meta (avoid self-inclusion loops)
+Dockerfile
+docker-compose.yml
+.dockerignore

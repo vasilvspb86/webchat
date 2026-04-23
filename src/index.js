@@ -52,6 +52,8 @@ io.engine.use(sessionMiddleware)
 app.locals.prisma = prisma
 app.locals.io = io
 
+app.get('/healthz', (_req, res) => res.json({ ok: true }))
+
 app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
 app.use('/api/files', filesRouter)
