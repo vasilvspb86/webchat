@@ -3,8 +3,9 @@ import { testPrisma, resetDb } from '../helpers/db.js'
 import { createMockIo } from '../helpers/io.js'
 import { createRoom } from '../../services/rooms.js'
 import { joinRoom } from '../../services/roomMembership.js'
+import { onConnect, _reset as resetPresence } from '../../socket/presence.js'
 
-beforeEach(() => resetDb())
+beforeEach(async () => { await resetDb(); resetPresence() })
 afterAll(() => testPrisma.$disconnect())
 
 async function seedPublic() {
@@ -56,5 +57,20 @@ describe('joinRoom (group D)', () => {
     expect(io.subs).toContainEqual({
       in: `user:${joiner.id}`, op: 'socketsJoin', target: `room:${room.id}`,
     })
+  })
+  it('member_joined payload carries live online=true when joiner has an active socket', async () => {
+    const { io, joiner, room } = await seedPublic()
+    await onConnect(io, { userId: joiner.id, id: 's1' }, testPrisma)
+    io.reset()
+    await joinRoom(testPrisma, io, joiner.id, room.id)
+    const ev = io.emitted.find((e) => e.event === 'member_joined')
+    expect(ev?.payload?.member?.online).toBe(true)
+  })
+  it('member_joined payload carries online=false when joiner has no active socket', async () => {
+    const { io, joiner, room } = await seedPublic()
+    io.reset()
+    await joinRoom(testPrisma, io, joiner.id, room.id)
+    const ev = io.emitted.find((e) => e.event === 'member_joined')
+    expect(ev?.payload?.member?.online).toBe(false)
   })
 })

@@ -3,8 +3,9 @@ import { testPrisma, resetDb } from '../helpers/db.js'
 import { createMockIo } from '../helpers/io.js'
 import { createRoom } from '../../services/rooms.js'
 import { inviteUser, acceptInvitation, declineInvitation } from '../../services/roomMembership.js'
+import { onConnect, _reset as resetPresence } from '../../socket/presence.js'
 
-beforeEach(() => resetDb())
+beforeEach(async () => { await resetDb(); resetPresence() })
 afterAll(() => testPrisma.$disconnect())
 
 async function seedPrivate() {
@@ -43,6 +44,23 @@ describe('inviteUser / accept / decline (group F)', () => {
     expect(io.subs).toContainEqual({
       in: `user:${guest.id}`, op: 'socketsJoin', target: `room:${room.id}`,
     })
+  })
+  it('accept: member_joined payload carries live online=true when accepter has an active socket', async () => {
+    const { io, owner, guest, room } = await seedPrivate()
+    const notif = await inviteUser(testPrisma, io, owner.id, room.id, { userId: guest.id })
+    await onConnect(io, { userId: guest.id, id: 's1' }, testPrisma)
+    io.reset()
+    await acceptInvitation(testPrisma, io, guest.id, notif.id)
+    const ev = io.emitted.find((e) => e.event === 'member_joined')
+    expect(ev?.payload?.member?.online).toBe(true)
+  })
+  it('accept: member_joined payload carries online=false when accepter has no active socket', async () => {
+    const { io, owner, guest, room } = await seedPrivate()
+    const notif = await inviteUser(testPrisma, io, owner.id, room.id, { userId: guest.id })
+    io.reset()
+    await acceptInvitation(testPrisma, io, guest.id, notif.id)
+    const ev = io.emitted.find((e) => e.event === 'member_joined')
+    expect(ev?.payload?.member?.online).toBe(false)
   })
   it('scenario 34: decline → notification deleted, no membership change', async () => {
     const { io, owner, guest, room } = await seedPrivate()
