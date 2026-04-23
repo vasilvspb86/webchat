@@ -20,4 +20,21 @@ describe('createMockIo', () => {
     io.reset()
     expect(io.emitted).toEqual([])
   })
+
+  it('tracks .in(channel).socketsJoin/Leave() in subs', () => {
+    const io = createMockIo()
+    io.in('user:u1').socketsJoin('room:r1')
+    io.in('user:u1').socketsLeave('room:r1')
+    expect(io.subs).toEqual([
+      { in: 'user:u1', op: 'socketsJoin',  target: 'room:r1' },
+      { in: 'user:u1', op: 'socketsLeave', target: 'room:r1' },
+    ])
+  })
+
+  it('reset() clears subs as well', () => {
+    const io = createMockIo()
+    io.in('user:u1').socketsJoin('room:r1')
+    io.reset()
+    expect(io.subs).toEqual([])
+  })
 })
