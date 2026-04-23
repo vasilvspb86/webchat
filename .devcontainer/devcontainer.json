@@ -2,12 +2,14 @@
   "name": "webchat",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "features": {
-    "ghcr.io/itsmechlark/features/postgresql:1": { "version": "16" }
+    "ghcr.io/itsmechlark/features/postgresql:1": { "version": "16" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [3000, 5432],
+  "forwardPorts": [3000, 5432, 8025],
   "portsAttributes": {
     "3000": { "label": "webchat", "onAutoForward": "openPreview" },
-    "5432": { "label": "postgres", "onAutoForward": "silent" }
+    "5432": { "label": "postgres", "onAutoForward": "silent" },
+    "8025": { "label": "mailhog", "onAutoForward": "silent" }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {
