@@ -29,6 +29,14 @@ export const useSocket = () => {
       return () => _handlers.get(event)?.delete(handler)
     },
     joinRoom(/* roomId */) { /* owned by messaging sub-project; broadcasts arrive anyway */ },
+    // Close the singleton so the server fires `disconnect` (presence flips the
+    // user offline for roommates). Handlers are cleared so a fresh login
+    // rebuilds them against a new socket with the new session cookie.
+    disconnect() {
+      if (_socket) { try { _socket.disconnect() } catch {} }
+      _socket = null
+      _handlers.clear()
+    },
     get raw() { return _socket },
   }
 }
@@ -83,7 +91,7 @@ export const app = createApp({
       catch (e) { setFlash(e.message) }
     }
     const doLogout = async () => {
-      try { await api('POST', '/api/auth/logout'); me.value = null; navigate('/login') }
+      try { await api('POST', '/api/auth/logout'); useSocket().disconnect(); me.value = null; navigate('/login') }
       catch (e) { setFlash(e.message) }
     }
     const doForgot = async (payload) => {
@@ -107,11 +115,11 @@ export const app = createApp({
       try {
         await api('DELETE', `/api/auth/sessions/${sid}`)
         const s = sessions.value.find(s => s.sid === sid)
-        if (s?.isCurrent) { me.value = null; navigate('/login') } else { await loadSessions() }
+        if (s?.isCurrent) { useSocket().disconnect(); me.value = null; navigate('/login') } else { await loadSessions() }
       } catch (e) { setFlash(e.message) }
     }
     const doDelete = async () => {
-      try { await api('DELETE', '/api/auth/account'); me.value = null; navigate('/login') }
+      try { await api('DELETE', '/api/auth/account'); useSocket().disconnect(); me.value = null; navigate('/login') }
       catch (e) { setFlash(e.message) }
     }
 
