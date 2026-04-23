@@ -103,6 +103,11 @@ app.component('room-page', {
           if (!members.value.find(m => m.userId === member.userId)) {
             members.value = [...members.value, member]
             bumpCount(+1)
+            if (member.online) {
+              const next = new Set(onlineIds.value)
+              next.add(member.userId)
+              onlineIds.value = next
+            }
           }
         })),
         socket.on('member_left', gated(({ userId }) => {

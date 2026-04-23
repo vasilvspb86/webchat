@@ -1,5 +1,6 @@
 import { RoomError } from './roomErrors.js'
 import { emitRoomEvent } from '../socket/rooms.js'
+import { isOnline } from '../socket/presence.js'
 import {
   resolveRole,
   canInviteToRoom,
@@ -34,7 +35,7 @@ export async function joinRoom(prisma, io, userId, roomId) {
   })
   emitRoomEvent(io, roomId, 'member_joined', {
     roomId,
-    member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt },
+    member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt, online: isOnline(member.userId) },
   })
   io?.in(`user:${userId}`).socketsJoin(`room:${roomId}`)
   return member
@@ -109,7 +110,7 @@ export async function acceptInvitation(prisma, io, userId, notificationId) {
   })
   emitRoomEvent(io, roomId, 'member_joined', {
     roomId,
-    member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt },
+    member: { userId: member.userId, username: member.user.username, isAdmin: false, joinedAt: member.joinedAt, online: isOnline(member.userId) },
   })
   io?.in(`user:${userId}`).socketsJoin(`room:${roomId}`)
 }
