@@ -68,6 +68,12 @@ export const app = createApp({
     const loadMe = async () => { try { me.value = (await api('GET', '/api/auth/me')).user } catch { me.value = null } }
     onMounted(loadMe)
 
+    // Open the socket as soon as we know who the user is, even on routes
+    // that don't show rooms (e.g. /profile). Without this, a user who logs
+    // in and sits on /profile has no live socket, so their roommates
+    // never receive a presence_update:online for them.
+    Vue.watch(me, (u) => { if (u) useSocket() }, { flush: 'post' })
+
     // shared flash
     const flash = ref('')
     const setFlash = (m) => { flash.value = m; setTimeout(() => flash.value = '', 4000) }
