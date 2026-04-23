@@ -27,8 +27,11 @@ services:
       POSTGRES_USER: webchat
       POSTGRES_PASSWORD: webchat
       POSTGRES_DB: webchat
-    ports:
-      - "5432:5432"
+    # No host port publish — the app reaches Postgres over Docker's internal
+    # network. Publishing 5432 conflicts with Codespaces' native Postgres
+    # feature. To run psql/Prisma Studio against this DB from your host,
+    # either: (a) `docker compose exec postgres psql -U webchat`, or
+    # (b) add `ports: ["5433:5432"]` locally and point clients at 5433.
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./prisma/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro
