@@ -4,9 +4,8 @@ import { dirname, join } from 'path'
 import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
-import session from 'express-session'
-import connectPgSimple from 'connect-pg-simple'
 import { PrismaClient } from '@prisma/client'
+import { buildSessionMiddleware } from './sessionMiddleware.js'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
 import filesRouter from './routes/files.js'
@@ -25,23 +24,9 @@ app.set('trust proxy', 1) // required for secure cookies behind TLS-terminating 
 const server = createServer(app)
 const io = new Server(server)
 
-const PgSession = connectPgSimple(session)
-
-const sessionMiddleware = session({
-  store: new PgSession({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    tableName: 'user_sessions',
-  }),
+const sessionMiddleware = buildSessionMiddleware({
+  conString: process.env.DATABASE_URL,
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
-  rolling: true,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  },
 })
 
 app.use(sessionMiddleware)
